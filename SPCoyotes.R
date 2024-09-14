@@ -18,6 +18,7 @@
 
 ### Read libraries -----
 
+{
 library(tidyverse) #for tidyverse coding format
 #library(visreg) #for visualization of model fit
 library(MuMIn) #for dredge()
@@ -35,19 +36,34 @@ library(MuMIn) #for dredge()
 #library(rempsyc) #for table formatting
 #library(MASS) #for ordered logistic regression
 #library(ggpubr) #for multi-panel figures
+}
 
 ### Load data -----
 
+{
 ## Full coyote dataset (used for plots)
 df_encounters_full <- read_csv("Data/sp_coyote_project_dataset_no_accuracy_cutoff.csv") %>%
   filter(encounter == "Sighting" | encounter == "Attack" | encounter == "Aggression to Human")
 
 ## Data subset with analysis variables only (used for analyses with no accuracy cutoff)
 df_encounters <- df_encounters_full %>%
+  #keep only variables to be included in analyses
   dplyr::select(encounter_ID, date, weekday, encounter, encounter_binary, coyseason, Lockdown_Phase,
                 prop_open_100_scaled, prop_open_150_scaled, prop_open_200_scaled, prop_open_250_scaled,
                 prop_natural_cover_100_scaled, prop_natural_cover_150_scaled, prop_natural_cover_200_scaled, prop_natural_cover_250_scaled,
                 prop_developed_100_scaled, prop_developed_150_scaled, prop_developed_200_scaled, prop_developed_250_scaled,
                 garbage_scaled, picnic_scaled, distance2water_scaled, distance2ocean_scaled, d2den_scaled,
                 precip_scaled, avg_temp_scaled, min_temp_scaled, max_temp_scaled, time_cos_scaled, lon, lat) %>%
-  filter(Pandemic_Phase != "Phase 0")
+  #remove any variables from outside study timeline
+  filter(!is.na(Lockdown_Phase)) %>%
+  #fix binary column so attacks and aggression are both 1 and sightings are 0
+  mutate(encounter_binary = ifelse(encounter_binary == 0, 0, 1)) %>%
+  #remove all data points with NAs
+  na.omit()
+
+## Human activity data summarized by sample block
+df_human_activity_blocks <- read_csv("Data/human_activity_blocks.csv")
+
+## Activity data for each individual person recorded
+df_individual_human_activity <- read_csv("Data/individual_human_activity.csv")
+}
