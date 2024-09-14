@@ -20,14 +20,14 @@
 
 {
 library(tidyverse) #for tidyverse coding format
-#library(visreg) #for visualization of model fit
+library(visreg) #for visualization of model fit
 library(MuMIn) #for dredge()
 #library(AICcmodavg) #for aictab
-#library(car) #for Anova
+library(car) #for Anova
 #library(Hmisc) # correlation coefficients
 #library(vcd) #for Cramer's V test
 #library(scales) #for breaks on plot axes
-#library(leaflet) #for maps
+library(leaflet) #for maps
 #library(logistf) #for Firth's Bias-Reduced Logistic Regression
 #library(glmnet) #for ridge and lasso regression
 #library(adehabitatHR) #for UD analysis
@@ -67,3 +67,34 @@ df_human_activity_blocks <- read_csv("Data/human_activity_blocks.csv")
 ## Activity data for each individual person recorded
 df_individual_human_activity <- read_csv("Data/individual_human_activity.csv")
 }
+
+### Map data -----
+
+{
+## Define colour palette
+color_pal <- colorFactor("RdYlBu", domain = NULL)
+
+## Map reports by interaction type
+df_encounters_full %>%
+  #load the map package
+  leaflet() %>%
+  #add the terrain
+  addTiles() %>%
+  #add circle markers at the site of each report
+  addCircleMarkers(~lon, ~lat, radius = 10, fillColor = ~color_pal(encounter),
+                   fillOpacity = 1, popup = ~encounter)
+}
+### Test assumptions of trends in human activity -----
+
+## Create model with all predictors
+human_all_variables_model <- lm(total_humans_adjusted ~ weather + site_category + time_from_peak_scaled + week_time,
+                                data = df_human_activity_blocks)
+
+## Evaluate model fit and variable estimates
+
+#Generate summary table
+summary(human_all_variables_model)
+#Generate ANOVA table
+Anova(human_all_variables_model)
+#Visualize model fit for individual variables
+visreg(human_all_variables_model, scale = "response")
