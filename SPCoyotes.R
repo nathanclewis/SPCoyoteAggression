@@ -98,3 +98,85 @@ summary(human_all_variables_model)
 Anova(human_all_variables_model)
 #Visualize model fit for individual variables
 visreg(human_all_variables_model, scale = "response")
+
+### Test land cover radii with model selection -----
+
+## 100m buffer model
+
+#model equation
+conflict_100m_model <- glm(encounter_binary ~ prop_natural_cover_100_scaled + prop_open_100_scaled + prop_developed_100_scaled,
+                           #run as logistic regression
+                           family = binomial(link = "logit"),
+                           #run with reduced dataset
+                           data = df_encounters)
+
+## 150m buffer model
+
+#model equation
+conflict_150m_model <- glm(encounter_binary ~ prop_natural_cover_150_scaled + prop_open_150_scaled + prop_developed_150_scaled,
+                           #run as logistic regression
+                           family = binomial(link = "logit"),
+                           #run with reduced dataset
+                           data = df_encounters)
+
+## 200m buffer model
+
+#model equation
+conflict_200m_model <- glm(encounter_binary ~ prop_natural_cover_200_scaled + prop_open_200_scaled + prop_developed_200_scaled,
+                           #run as logistic regression
+                           family = binomial(link = "logit"),
+                           #run with reduced dataset
+                           data = df_encounters)
+
+## 250m buffer model
+
+#model equation
+conflict_250m_model <- glm(encounter_binary ~ prop_natural_cover_250_scaled + prop_open_250_scaled + prop_developed_250_scaled,
+                           #run as logistic regression
+                           family = binomial(link = "logit"),
+                           #run with reduced dataset
+                           data = df_encounters)
+
+## null model
+
+#model equation
+null_conflict_model <- glm(encounter_binary ~ 1,
+                           #run as logistic regression
+                           family = binomial(link = "logit"),
+                           #run with reduced dataset
+                           data = df_encounters)
+
+## Use BIC model selection to determine which land cover buffer radius is the best fit
+BIC(conflict_100m_model, conflict_150m_model, conflict_200m_model, conflict_250m_model, null_conflict_model)
+
+### Calculate correlation coefficients for model variables -----
+
+## All continuous variables
+cor(df_encounters[c(8, 12, 16, 20:29)], method = "spearman")
+
+## Lockdown phase and coyseason
+
+#Create frequency table
+tbl <- table(df_encounters[c(6,7)])
+#Run Chi-Squared Test
+chi <- chisq.test(tbl)
+#Calculate Cramer's V
+sqrt(chi$statistic / sum(tbl))
+
+## Lockdown phase and weekday
+
+#Create frequency table
+tbl <- table(df_encounters[c(3,7)])
+#Run Chi-Squared Test
+chi <- chisq.test(tbl)
+#Calculate Cramer's V
+sqrt(chi$statistic / sum(tbl))
+
+## Coyote season and weekday
+
+#Create frequency table
+tbl <- table(df_encounters[c(3,6)])
+#Run Chi-Squared Test
+chi <- chisq.test(tbl)
+#Calculate Cramer's V
+sqrt(chi$statistic / sum(tbl))
