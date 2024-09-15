@@ -22,19 +22,9 @@
 library(tidyverse) #for tidyverse coding format
 library(visreg) #for visualization of model fit
 library(MuMIn) #for dredge()
-#library(AICcmodavg) #for aictab
 library(car) #for Anova
-#library(Hmisc) # correlation coefficients
-#library(vcd) #for Cramer's V test
-#library(scales) #for breaks on plot axes
 library(leaflet) #for maps
-#library(logistf) #for Firth's Bias-Reduced Logistic Regression
-#library(glmnet) #for ridge and lasso regression
-#library(adehabitatHR) #for UD analysis
-#library(viridis) #for colours
-#library(circular) #for Watson's U2 Test
 library(rempsyc) #for table formatting
-#library(MASS) #for ordered logistic regression
 library(ggpubr) #for multi-panel figures
 }
 
@@ -103,6 +93,7 @@ visreg(human_all_variables_model, scale = "response")
 
 ### Test land cover radii with model selection -----
 
+{
 ## 100m buffer model
 
 #Model equation
@@ -150,41 +141,47 @@ null_conflict_model <- glm(encounter_binary ~ 1,
 
 ## Use BIC model selection to determine which land cover buffer radius is the best fit
 BIC(conflict_100m_model, conflict_150m_model, conflict_200m_model, conflict_250m_model, null_conflict_model)
+}
 
 ### Calculate correlation coefficients for model variables -----
+
 
 ## All continuous variables
 cor(df_encounters[c(8, 12, 16, 20:29)], method = "spearman")
 
 ## Lockdown phase and coyseason
-
+{
 #Create frequency table
 tbl <- table(df_encounters[c(6,7)])
 #Run Chi-Squared Test
 chi <- chisq.test(tbl)
 #Calculate Cramer's V
 sqrt(chi$statistic / sum(tbl))
+}
 
 ## Lockdown phase and weekday
-
+{
 #Create frequency table
 tbl <- table(df_encounters[c(3,7)])
 #Run Chi-Squared Test
 chi <- chisq.test(tbl)
 #Calculate Cramer's V
 sqrt(chi$statistic / sum(tbl))
+}
 
 ## Coyote season and weekday
-
+{
 #Create frequency table
 tbl <- table(df_encounters[c(3,6)])
 #Run Chi-Squared Test
 chi <- chisq.test(tbl)
 #Calculate Cramer's V
 sqrt(chi$statistic / sum(tbl))
+}
 
 ### Compare fit of correlated variables -----
 
+{
 ## Open and natural
 
 #Model equation
@@ -210,9 +207,10 @@ null_model <- glm(encounter_binary ~ 1,
 
 #Use BIC model selection to compare model fits
 BIC(open_model, natural_model, null_model)
+}
 
 ## Maximum, average, and minimum daily temperatures
-
+{
 #Model equation
 max_temp_model <- glm(encounter_binary ~ max_temp_scaled,
                       #Run as a logistic regression
@@ -243,9 +241,10 @@ null_model <- glm(encounter_binary ~ 1,
 
 #Use BIC model selection to compare model fits
 BIC(max_temp_model, min_temp_model, avg_temp_model, null_model)
+}
 
 ## Coyote season and lockdown phase
-
+{
 #Model equation
 coyseason_model <- glm(encounter_binary ~ coyseason,
                        #Run as a logistic regression
@@ -269,6 +268,7 @@ null_model <- glm(encounter_binary ~ 1,
 
 #Use BIC model selection to compare model fits
 BIC(coyseason_model, lockdown_model, null_model)
+}
 
 ### Run model selection on retained variables -----
 
@@ -352,7 +352,7 @@ visreg(top_model_2, scale = "response", ylab = "Probability of report being of a
 ### Test for differences between expected and observed victim demographics and activities -----
 
 ## Victim sex/age group expected totals
-
+{
 #Sum of total humans (extrapolated to hour-long time blocks)
 total_humans <- sum(df_human_activity_blocks$male_adults_adjusted) + sum(df_human_activity_blocks$female_adults_adjusted) + sum(df_human_activity_blocks$children_adjusted)
 #Calculate expected total of adult males
@@ -389,17 +389,18 @@ victim_demo_groups <- df_encounters_full %>%
 
 df_victim_demos <- c(victim_demo_groups$MA[1], victim_demo_groups$FA[1], victim_demo_groups$C[1])
 chisq.test(df_victim_demos, p = c(expected_adult_males, expected_adult_females, expected_children))
+}
 
 ## Victim activity expected totals
-
+{
 #Sum of total humans (extrapolated to hour-long time blocks)
-total_humans <- sum(df_human_summarised$walkers_adjusted) + sum(df_human_summarised$runners_adjusted) + sum(df_human_summarised$wheels_adjusted)
+total_humans <- sum(df_human_activity_blocks$walkers_adjusted) + sum(df_human_activity_blocks$runners_adjusted) + sum(df_human_activity_blocks$wheels_adjusted)
 #Calculate expected total of walkers
-expected_walkers <- sum(df_human_summarised$walkers_adjusted)/total_humans
+expected_walkers <- sum(df_human_activity_blocks$walkers_adjusted)/total_humans
 #Calculate expected total of runners
-expected_runners <- sum(df_human_summarised$runners_adjusted)/total_humans
+expected_runners <- sum(df_human_activity_blocks$runners_adjusted)/total_humans
 #Calculate expected total of cyclists and other wheel-riders
-expected_wheels <- sum(df_human_summarised$wheels_adjusted)/total_humans
+expected_wheels <- sum(df_human_activity_blocks$wheels_adjusted)/total_humans
 
 ## Victim activity observed totals
 
@@ -428,9 +429,10 @@ victim_activity_groups <- df_encounters_full %>%
 
 df_victim_activity <- c(victim_activity_groups$walk[1], victim_activity_groups$run[1], victim_activity_groups$wheels[1])
 chisq.test(df_victim_activity, p = c(expected_walkers, expected_runners, expected_wheels))
+}
 
 ## Create subsetted dataset for dogs
-
+{
 df_expected_dogs <- df_individual_human_activity %>%
   #Keep only one row per group
   distinct(group_ID, .keep_all = TRUE) %>%
@@ -450,7 +452,7 @@ df_expected_dogs <- df_individual_human_activity %>%
 ## Dog presence expected totals
 
 #Sum of total human groups (extrapolated to hour-long time blocks)
-total_groups <- length(df_human_groups$group_ID)
+total_groups <- df_expected_dogs$NoDogs + df_expected_dogs$Dogs
 #Calculate expected total groups with dogs
 expected_dogs <- df_expected_dogs$Dogs[1]/total_groups
 #Calculate expected total groups without dogs
@@ -462,12 +464,12 @@ expected_NoDogs <- df_expected_dogs$NoDogs[1]/total_groups
 df_victim_dogs <- c(34, 0)
 
 ## Goodness of Fit for dog presence
-
 chisq.test(df_victim_dogs, p = c(expected_NoDogs, expected_dogs))
+}
 
 ## Human group size expected totals
-
-df_human_group_size <- df_human %>%
+{
+df_human_group_size <- df_individual_human_activity %>%
   #Group dataset by group ID
   group_by(group_ID) %>%
   #Add column for number of people in each group
@@ -517,6 +519,7 @@ victim_group_size <- df_encounters_full %>%
 chisq.test(c(victim_group_size$Individual[1],victim_group_size$Group[1]),
            p = c(df_human_group_size$Individual[1]/df_human_group_size$total[1],
                  df_human_group_size$Group[1]/df_human_group_size$total[1]))
+}
 
 ### Tables and figures from publication -----
 
