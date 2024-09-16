@@ -32,7 +32,7 @@ library(ggpubr) #for multi-panel figures
 
 {
 ## Full coyote dataset (used for plots)
-df_encounters_full <- read_csv("Data/sp_coyote_project_dataset_no_accuracy_cutoff.csv") %>%
+df_encounters_full <- read_csv("Data/sp_coyote_project_dataset.csv") %>%
   filter(encounter == "Sighting" | encounter == "Attack" | encounter == "Aggression to Human")
 
 ## Data subset with analysis variables only (used for analyses with no accuracy cutoff)
