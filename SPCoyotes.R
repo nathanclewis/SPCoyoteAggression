@@ -16,7 +16,7 @@
   # Description of single line
 }
 
-### Read libraries -----
+### Read libraries and settings -----
 
 {
 library(tidyverse) #for tidyverse coding format
@@ -26,6 +26,9 @@ library(car) #for Anova
 library(leaflet) #for maps
 library(rempsyc) #for table formatting
 library(ggpubr) #for multi-panel figures
+library(caret) #for cross-validation
+  
+options(scipen=10000) #no scientific notation on plots
 }
 
 ### Load data -----
@@ -47,7 +50,11 @@ df_encounters <- df_encounters_full %>%
   #remove any variables from outside study timeline
   filter(!is.na(Lockdown_Phase)) %>%
   #fix binary column so attacks and aggression are both 1 and sightings are 0
-  mutate(encounter_binary = ifelse(encounter_binary == 0, 0, 1)) %>%
+  mutate(encounter_binary = ifelse(encounter_binary == 0, 0, 1),
+         #add factor column for cv
+         encounter_binary_fc = case_when(encounter_binary == 0 ~ "sighting",
+                                         encounter_binary == 1 ~ "encounter",
+                                         TRUE ~ NA_character_)) %>%
   #remove all data points with NAs
   na.omit()
 
@@ -275,7 +282,7 @@ BIC(coyseason_model, lockdown_model, null_model)
 ## Create global model
 
 #Model equation
-combined_model_conflicts_sighting <- glm(encounter_binary ~ garbage_scaled + picnic_scaled + d2den_scaled + distance2water_scaled + distance2ocean_scaled + precip_scaled + max_temp_scaled + prop_natural_cover_100_scaled + prop_developed_100_scaled + time_cos_scaled + Lockdown_Phase + weekday + coyseason:d2den_scaled + garbage_scaled:picnic_scaled + weekday:Lockdown_Phase + distance2ocean_scaled:picnic_scaled + distance2ocean_scaled:garbage_scaled + weekday:picnic_scaled + weekday:time_cos_scaled + distance2ocean_scaled:time_cos_scaled,
+combined_model_conflicts_sighting <- glm(encounter_binary ~ garbage_scaled + picnic_scaled + d2den_scaled + distance2water_scaled + distance2ocean_scaled + precip_scaled + max_temp_scaled + prop_natural_cover_100_scaled + prop_developed_100_scaled + time_cos_scaled + Lockdown_Phase + weekday + Lockdown_Phase:time_cos_scaled + coyseason:d2den_scaled + garbage_scaled:picnic_scaled + weekday:Lockdown_Phase + distance2ocean_scaled:picnic_scaled + distance2ocean_scaled:garbage_scaled + weekday:picnic_scaled + weekday:time_cos_scaled + distance2ocean_scaled:time_cos_scaled,
                                          #Run as a logistic regression
                                          family = binomial(link = "logit"),
                                          #Run with reduced dataset
@@ -294,7 +301,7 @@ View(combined_conflict_sighting_dredged)
 ## Create top model #1
 
 #Model equation
-top_model_1 <- glm(encounter_binary ~ d2den_scaled + distance2ocean_scaled + Lockdown_Phase + picnic_scaled + precip_scaled + time_cos_scaled + weekday ,
+top_model_1 <- glm(encounter_binary ~ d2den_scaled + distance2ocean_scaled + Lockdown_Phase + picnic_scaled + precip_scaled + time_cos_scaled + weekday,
                                      #Run as a logistic regression
                                      family = binomial(link = "logit"),
                                      #Run with reduced dataset
@@ -323,7 +330,7 @@ visreg(top_model_1, scale = "response", ylab = "Probability of report being of a
 ## Create top model #2
 
 #Model equation
-top_model_2 <- glm(encounter_binary ~ d2den_scaled + distance2ocean_scaled + Lockdown_Phase + garbage_scaled + precip_scaled + time_cos_scaled + weekday ,
+top_model_2 <- glm(encounter_binary ~ d2den_scaled + distance2ocean_scaled + Lockdown_Phase + garbage_scaled + precip_scaled + time_cos_scaled + weekday,
                                      #Run as a logistic regression
                                      family = binomial(link = "logit"),
                                      #Run with reduced dataset
@@ -348,6 +355,72 @@ vif(top_model_2)
 
 #Model fit 'visreg' plots
 visreg(top_model_2, scale = "response", ylab = "Probability of report being of aggression or an attack", ylim = c(0,1)) 
+
+### Stratified k-fold cross validation -----
+
+## Define the control for k-fold CV with stratification based on the response variable
+set.seed(123)  # For reproducibility
+cv_control <- trainControl(method = "cv", 
+                           number = 5,  # Number of folds
+                           classProbs = TRUE,  # Necessary for classification models
+                           summaryFunction = twoClassSummary,
+                           #downsample the more prominent class (sightings)
+                           sampling = "down")
+
+#Define a place to store the ROC, sens, and spec data for model 1
+df_model_1_results <- tibble(
+  ROC = rep(NA, 10),
+  Sens = rep(NA, 10),
+  Spec = rep(NA, 10)
+)
+## Loop for averaging results over 10 iterations
+for (i in 1:10) {
+  ## Train the first model with cross-validation
+  model_1 <- train(encounter_binary_fc ~ d2den_scaled + distance2ocean_scaled + Lockdown_Phase + picnic_scaled + precip_scaled + time_cos_scaled + weekday,
+                   data = df_encounters, 
+                   method = "glm",
+                   family = "binomial",
+                   trControl = cv_control,
+                   # Choose your preferred metric, e.g., "Accuracy" or "ROC"
+                   metric = "ROC")  
+  #Save results
+  df_model_1_results$ROC[i] = model_1$results[[2]]
+  df_model_1_results$Sens[i] = model_1$results[[3]]
+  df_model_1_results$Spec[i] = model_1$results[[4]]
+}
+
+## Calculate means after 10 iterations
+mean(df_model_1_results$ROC)
+mean(df_model_1_results$Sens)
+mean(df_model_1_results$Spec)
+
+
+#Define a place to store the ROC, sens, and spec data for model 2
+df_model_2_results <- tibble(
+  ROC = rep(NA, 10),
+  Sens = rep(NA, 10),
+  Spec = rep(NA, 10)
+)
+## Loop for averaging results over 10 iterations
+for (i in 1:10) {
+  ## Train the second model with cross-validation
+  model_2 <- train(encounter_binary_fc ~ d2den_scaled + distance2ocean_scaled + Lockdown_Phase + garbage_scaled + precip_scaled + time_cos_scaled + weekday,
+                   data = df_encounters, 
+                   method = "glm",
+                   family = "binomial",
+                   trControl = cv_control,
+                   # Choose your preferred metric, e.g., "Accuracy" or "ROC"
+                   metric = "ROC")  
+  #Save results
+  df_model_2_results$ROC[i] = model_2$results[[2]]
+  df_model_2_results$Sens[i] = model_2$results[[3]]
+  df_model_2_results$Spec[i] = model_2$results[[4]]
+}
+
+## Calculate means after 10 iterations
+mean(df_model_2_results$ROC)
+mean(df_model_2_results$Sens)
+mean(df_model_2_results$Spec)
 
 ### Test for differences between expected and observed victim demographics and activities -----
 
@@ -523,46 +596,67 @@ chisq.test(c(victim_group_size$Individual[1],victim_group_size$Group[1]),
 
 ### Tables and figures from publication -----
 
-## Plot confidene intervals
+## Plot confidence intervals
 {
 #List of variables
-Variable = c("Intercept", "Distance from den", "Distance from ocean", "Lockdown phase 2: Social\ngatherings prohibited", "Lockdown phase 3: Social\ngatherings limited", "Distance from picnic area", "Daily precipitation", "Time of day", "Weekend")
+Variables_model_1 = c("Intercept", "Distance from den", "Distance from ocean", "Lockdown phase 2: Social\ngatherings prohibited", "Lockdown phase 3: Social\ngatherings limited", "Distance from picnic area", "Daily precipitation", "Time of day", "Weekend")
+Variables_model_2 = c("Intercept", "Distance from den", "Distance from ocean", "Lockdown phase 2: Social\ngatherings prohibited", "Lockdown phase 3: Social\ngatherings limited", "Distance from garbage bin", "Daily precipitation", "Time of day", "Weekend")
 
 #List of coefficients
-Coefficient = c(-5.0185, -0.9734, -0.6069, 3.8010, 3.2220, 0.6079, 0.4698, -0.8824, -1.4404)
+coefficients_1 = c(-5.0185, -0.9734, -0.6069, 3.8010, 3.2220, 0.6079, 0.4698, -0.8824, -1.4404)
+coefficients_2 = c(-5.0017, -0.7469, -0.4808, 3.7972, 3.1186, 0.4555, 0.4352, -0.8396, -1.2830)
 
-#Create dataframe with confidence intervals
-CIs <- as_tibble(confint(top_model_1)) %>%
+#Create dataframe with confidence intervals for model 1
+CI_model_1 <- as_tibble(confint(top_model_1)) %>%
   #Add lists of variables and coefficients
-  cbind(Variable, Coefficient) %>%
-  #Add confidence boundaries
-  mutate(Significant = ifelse(`2.5 %` > 0 | `97.5 %` < 0, "Significant", "Non-Significant")) %>%
-  #Switch datafram to long format
-  pivot_longer(cols = c(`2.5 %`, `97.5 %`) , names_to = "Level", values_to = "CLs") %>%
+  cbind(Variables_model_1, coefficients_1) %>%
+  #Switch dataframe to long format
+  pivot_longer(cols = c(`2.5 %`, `97.5 %`) , names_to = "Level", values_to = "CL") %>%
   #Set order of variables
-  mutate(Variable=factor(Variable,levels = c("Daily precipitation", "Distance from picnic area", "Distance from ocean","Time of day", "Distance from den", "Weekend", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")))
+  mutate(Variable=factor(Variables_model_1,levels = c("Daily precipitation", "Distance from picnic area", "Distance from ocean","Time of day", "Distance from den", "Weekend", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")),
+  #Add model label
+         Model = "Model 1") %>%
+  #Rename coefficients column to match other model df
+  rename(Coefficient = coefficients_1) %>%
+  dplyr::select(Model, Variable, Coefficient, Level, CL)
+
+#Create dataframe with confidence intervals for model 2
+CI_model_2 <- as_tibble(confint(top_model_2)) %>%
+  #Add lists of variables and coefficients
+  cbind(Variables_model_2, coefficients_2) %>%
+  #Switch dataframe to long format
+  pivot_longer(cols = c(`2.5 %`, `97.5 %`) , names_to = "Level", values_to = "CL") %>%
+  #Set order of variables
+  mutate(Variable=factor(Variables_model_2,levels = c("Daily precipitation","Distance from garbage bin","Distance from ocean","Time of day", "Distance from den", "Weekend", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")),
+         #Add model label
+         Model = "Model 2") %>%
+  #Rename coefficients column to match other model df
+  rename(Coefficient = coefficients_2) %>%
+  dplyr::select(Model, Variable, Coefficient, Level, CL)
+
+#Combine dfs for top models
+CIs <- CI_model_1 %>%
+  full_join(CI_model_2)
 
 #Create plot and specify variables
-ggplot(CIs, aes(x = CLs, y = Variable, group = Variable)) +
-  #Format data into points
-  geom_point() +
+ggplot(CIs, aes(x = CL, y = factor(Variable, levels = c("Daily precipitation","Distance from garbage bin","Distance from ocean","Distance from picnic area","Time of day", "Distance from den", "Weekend", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")))) +
   #Format data into lines
-  geom_line() +
+  geom_line(aes(col = Model)) +
   #Add dashed vertical line at x=0
   geom_vline(xintercept = 0, linetype = "dashed") +
   #Add horizontal lines to separate types of variables
-  geom_hline(yintercept = c(5.5, 8.5)) +
+  geom_hline(yintercept = c(6.5, 9.5)) +
   #Add sections labels, and specify locations
   geom_text(data = data.frame(x = c(-7,-7,-7),
-                              y = c(5.3,8.3,9.3),
+                              y = c(6.3,9.3,10.3),
                               label=c("Continuous variables","Categorical variables","Intercept")),
             aes(x=x,y=y,label=label, group = x), size = 4, hjust = 0) +
   #Set theme to black and white
-  theme_bw() +
+  theme_classic() +
   #Set x label
-  labs(x = "95% Confidence Intervals") +
+  labs(x = "95% Confidence Intervals", y = "Predictor Variable") +
   #Add points for coefficients
-  geom_point(CIs, mapping = aes(x = Coefficient, col = "Coefficient")) +
+  geom_point(CIs, mapping = aes(x = Coefficient, col = Model)) +
   #Remove legend
   theme(legend.position="none") +
   #Set text size
@@ -617,13 +711,17 @@ df_top_variables_table <- tibble(Variable, `Appearances in top models`, `∆BIC 
 nice_table(df_top_variables_table)
 }
 
-{ ###Multi-plots for logistic regression variables
+##Multi-plots for logistic regression variables
+{ 
 
 ## Lockdown phase bar plot
 
 p_lockdown <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter = ifelse(encounter_binary == 0, "Sighting", "Aggression")) %>%
+  #Remove NAs
+  filter(!is.na(Lockdown_Phase)) %>%
   #Create plot and set variables
   ggplot(aes(x = Lockdown_Phase, fill = encounter)) +
   #Format as grouped bar plot
@@ -635,7 +733,11 @@ p_lockdown <- df_encounters_full %>%
        y = "Reports", fill = "Report type") 
 
 ## Coyote season
+
+# Specify order for x-axis
+season_order <- c('Breeding', 'Pup-rearing', 'Dispersal')
 p_season <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter = ifelse(encounter_binary == 0, "Sighting", "Aggression"),
          #Rename seasons with capitals
@@ -643,16 +745,19 @@ p_season <- df_encounters_full %>%
                             ifelse(coyseason == "dispersal", "Dispersal",
                                    "Pup-rearing"))) %>%
   #Create plot and set variables
-  ggplot(aes(x = coyseason, fill = encounter)) +
+  ggplot(aes(x = factor(coyseason, level = season_order), fill = encounter)) +
   #Format as grouped bar plot
   geom_bar(stat = "count", position = "dodge") +
   #Remove gridlines
   theme_classic() +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,100,200)) +
   #Set labels
-  labs(x = "Coyote season", y = "Reports", fill = "Encounter")
+  labs(x = "Phenological season", y = "Reports", fill = "Encounter")
 
 ## Week phase
 p_weekphase <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter = ifelse(encounter_binary == 0, "Sighting", "Aggression"),
          #Rename week phases with capitals
@@ -664,10 +769,11 @@ p_weekphase <- df_encounters_full %>%
   #Remove gridlines
   theme_classic() +
   #Set labels
-  labs(x = "Week phase", y = "Reports", fill = "Encounter")
+  labs(x = "Weekday", y = "Reports", fill = "Encounter")
 
 ## Distance from den
 p_den <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
@@ -676,24 +782,30 @@ p_den <- df_encounters_full %>%
   geom_density() +
   #Remove gridlines
   theme_classic() +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,0.0005,0.001)) +
   #Set labels
   labs(x = "Distance from nearest den (m)", y = "Density", col = "Encounter")
 
 ## Precipitation
 p_precip <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
   ggplot((aes(x = precip, col = encounter_binary))) +
   #Format as density plot
-  geom_density() +
+  stat_density() +
   #Remove gridlines
   theme_classic() +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,1,2)) +
   #Set labels
   labs(x = "Daily precipitation (mm)", y = "Density", col = "Encounter")
 
 ## Max temp
 p_maxtemp <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
@@ -707,6 +819,7 @@ p_maxtemp <- df_encounters_full %>%
 
 ## Time of day
 p_time <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
@@ -722,11 +835,12 @@ p_time <- df_encounters_full %>%
             inherit.aes = FALSE, #resolves error
             data = data.frame(x = c(-1, 0, 1)),
             y = c(0.1, 0.1, 0.1),
-            label=c("2am", "8am, 8pm", "2pm"),
+            label=c("0200 hours", "0800hours, 2000 hours", "1400 hours"),
             size = 2)
 
 ## Distance from ocean
 p_ocean <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
@@ -740,6 +854,7 @@ p_ocean <- df_encounters_full %>%
 
 ## Distance from water
 p_water <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
@@ -748,11 +863,14 @@ p_water <- df_encounters_full %>%
   geom_density() +
   #Remove gridlines
   theme_classic() +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,0.002, 0.004)) +
   #Set labels
   labs(x = "Distance from water (m)", y = "Density", col = "Encounter")
 
 ## Distance to nearest garbage bin
 p_garbage <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
@@ -766,6 +884,7 @@ p_garbage <- df_encounters_full %>%
 
 ## Distance to nearest picnic area
 p_picnic <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
@@ -774,11 +893,14 @@ p_picnic <- df_encounters_full %>%
   geom_density() +
   #Remove gridlines
   theme_classic() +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,0.001,0.002)) +
   #Set labels
   labs(x = "Distance from nearest picnic area (m)", y = "Density", col = "Encounter")
 
 ## Proportion of 100m buffer - natural cover
 p_natural <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
@@ -792,6 +914,7 @@ p_natural <- df_encounters_full %>%
 
 ## Proportion of 100m buffer - open
 p_open <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
@@ -805,6 +928,7 @@ p_open <- df_encounters_full %>%
 
 ## Proportion of 100m buffer - developed
 p_developed <- df_encounters_full %>%
+  filter(!is.na(Lockdown_Phase)) %>%
   #Add column for sightings or aggression
   mutate(encounter_binary = ifelse(encounter_binary == 0, "Sighting", "Aggressive")) %>%
   #Create plot and set variables
@@ -819,11 +943,11 @@ p_developed <- df_encounters_full %>%
 ## Combine all plots into one multi-panel plot
 
 #Include all individual plots
-multi_plot<- ggarrange(p_lockdown, p_season, p_weekphase, p_time, p_den, p_ocean, p_water, p_garbage, p_picnic, p_natural, p_developed, p_open, p_precip, p_maxtemp,
+multi_plot<- ggarrange(p_lockdown, p_den, p_ocean, p_time, p_precip, p_garbage, p_weekphase, p_picnic, p_season, p_water, p_natural, p_developed, p_open, p_maxtemp,
                        #Define plot labels
                        labels = c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"), 
                        #Arrange plot positions
-                       ncol = 2, nrow = 7,
+                       ncol = 3, nrow = 7,
                        #Include legend
                        common.legend = T,
                        #Fix position of labels
@@ -835,7 +959,7 @@ multi_plot
 }
 
 ## Plot interaction density over time
-
+{
 df_encounters_full %>%
   #Fix name of non-contact aggressive encounters for display purposes
   mutate(encounter = ifelse(encounter == "Aggression to Human",
@@ -863,3 +987,7 @@ df_encounters_full %>%
   #Set font size
   theme(text = element_text(size = 20),
         axis.text = element_text(size = 15))
+}
+
+### FRST_532C -----
+
