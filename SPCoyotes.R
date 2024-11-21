@@ -795,7 +795,7 @@ p_precip <- df_encounters_full %>%
   #Create plot and set variables
   ggplot((aes(x = precip, col = encounter_binary))) +
   #Format as density plot
-  stat_density() +
+  geom_density() +
   #Remove gridlines
   theme_classic() +
   #Set y-axis breaks
@@ -833,9 +833,9 @@ p_time <- df_encounters_full %>%
   #Add reference labels for time of day along the x-axis
   geom_text(aes(x=x,y=y,label=label),
             inherit.aes = FALSE, #resolves error
-            data = data.frame(x = c(-1, 0, 1)),
-            y = c(0.1, 0.1, 0.1),
-            label=c("0200 hours", "0800hours, 2000 hours", "1400 hours"),
+            data = data.frame(x = c(-0.8, 0, 0, 0.8)),
+            y = c(0.1, 0.2, 0.05, 0.1),
+            label=c("0200 hours","0800hours","2000 hours","1400 hours"),
             size = 2)
 
 ## Distance from ocean
@@ -849,6 +849,8 @@ p_ocean <- df_encounters_full %>%
   geom_density() +
   #Remove gridlines
   theme_classic() +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,0.0015,0.003)) +
   #Set labels
   labs(x = "Distance from the ocean (m)", y = "Density", col = "Encounter")
 
@@ -879,6 +881,8 @@ p_garbage <- df_encounters_full %>%
   geom_density() +
   #Remove gridlines
   theme_classic() +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,0.003,0.006)) +
   #Set labels
   labs(x = "Distance from nearest garbage bin (m)", y = "Density", col = "Encounter")
 
@@ -951,11 +955,12 @@ multi_plot<- ggarrange(p_lockdown, p_den, p_ocean, p_time, p_precip, p_garbage, 
                        #Include legend
                        common.legend = T,
                        #Fix position of labels
-                       vjust = 0) 
+                       vjust = -0.5) 
 
 #Add titles and labels to the multi-panel graph
 multi_plot <- annotate_figure(multi_plot)
 multi_plot
+#ggsave(filename = "SP_multiplot.png", multi_plot, dpi = "retina")
 }
 
 ## Plot interaction density over time
@@ -988,6 +993,3 @@ df_encounters_full %>%
   theme(text = element_text(size = 20),
         axis.text = element_text(size = 15))
 }
-
-### FRST_532C -----
-
