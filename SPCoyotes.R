@@ -22,9 +22,8 @@
 library(tidyverse) #for tidyverse coding format
 library(visreg) #for visualization of model fit
 library(MuMIn) #for dredge()
-library(car) #for Anova
+library(car) #for Anova. and VIF
 library(leaflet) #for maps
-library(rempsyc) #for table formatting
 library(ggpubr) #for multi-panel figures
 library(caret) #for cross-validation
   
@@ -711,7 +710,7 @@ df_top_variables_table <- tibble(Variable, `Appearances in top models`, `∆BIC 
 nice_table(df_top_variables_table)
 }
 
-##Multi-plots for logistic regression variables
+## Multi-plot for logistic regression variables
 { 
 
 ## Lockdown phase bar plot
@@ -730,7 +729,7 @@ p_lockdown <- df_encounters_full %>%
   theme_classic() +
   #Set labels
   labs(x = "Pandemic social restriction phase",
-       y = "Reports", fill = "Report type") 
+       y = "Reports", fill = "Report type")
 
 ## Coyote season
 
@@ -829,14 +828,14 @@ p_time <- df_encounters_full %>%
   #Remove gridlines
   theme_classic() +
   #Set labels
-  labs(x = "Time of day (cos transformed)", y = "Density", col = "Encounter") +
+  labs(x = "Time of day (cos transformed)", y = "Density", col = "Encounter")  +
   #Add reference labels for time of day along the x-axis
   geom_text(aes(x=x,y=y,label=label),
             inherit.aes = FALSE, #resolves error
             data = data.frame(x = c(-0.8, 0, 0, 0.8)),
             y = c(0.1, 0.2, 0.05, 0.1),
-            label=c("0200 hours","0800hours","2000 hours","1400 hours"),
-            size = 2)
+            label=c("0200 hours","0800 hours","2000 hours","1400 hours"),
+            size = 5)
 
 ## Distance from ocean
 p_ocean <- df_encounters_full %>%
@@ -992,4 +991,23 @@ df_encounters_full %>%
   #Set font size
   theme(text = element_text(size = 20),
         axis.text = element_text(size = 15))
+}
+
+## Human activity multi-plot for appendix
+{
+  df_human_activity_blocks %>%
+    mutate(site_category = case_when(
+      site_category == "developed" ~ "Developed",
+      site_category == "forest" ~ "Forest",
+      site_category == "lakeside" ~ "Lakeside",
+      site_category == "seawall" ~ "Seawall",
+      TRUE ~ NA_character_
+    )) %>%
+    ggplot(aes(x = start_time, y = total_humans_adjusted, col = weather)) +
+    geom_point(aes(col = weather)) +
+    geom_smooth(method = "loess", se = FALSE, span = 3) +
+    facet_wrap(~site_category) +
+    scale_y_log10() +
+    theme_bw() +
+    labs(x = "Time of day", y = "People per hour", col = "Weather")
 }
