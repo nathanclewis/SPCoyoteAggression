@@ -995,7 +995,7 @@ df_encounters_full %>%
 
 ## Human activity multi-plot for appendix
 {
-  df_human_activity_blocks %>%
+  human_multiplot <- df_human_activity_blocks %>%
     mutate(site_category = case_when(
       site_category == "developed" ~ "Developed",
       site_category == "forest" ~ "Forest",
@@ -1010,4 +1010,5 @@ df_encounters_full %>%
     scale_y_log10() +
     theme_bw() +
     labs(x = "Time of day", y = "People per hour", col = "Weather")
+  #ggsave(filename = "SP_human_multiplot.png", human_multiplot, dpi = "retina")
 }
