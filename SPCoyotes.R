@@ -153,7 +153,7 @@ BIC(conflict_100m_model, conflict_150m_model, conflict_200m_model, conflict_250m
 
 
 ## All continuous variables
-cor(df_encounters[c(8, 12, 16, 20:29)], method = "spearman")
+cor(df_encounters[c(8, 12, 16, 20:29)], method = "pearson")
 
 ## Lockdown phase and coyseason
 {
@@ -281,7 +281,7 @@ BIC(coyseason_model, lockdown_model, null_model)
 ## Create global model
 
 #Model equation
-combined_model_conflicts_sighting <- glm(encounter_binary ~ garbage_scaled + picnic_scaled + d2den_scaled + distance2water_scaled + distance2ocean_scaled + precip_scaled + max_temp_scaled + prop_natural_cover_100_scaled + prop_developed_100_scaled + time_cos_scaled + Lockdown_Phase + weekday + Lockdown_Phase:time_cos_scaled + coyseason:d2den_scaled + garbage_scaled:picnic_scaled + weekday:Lockdown_Phase + distance2ocean_scaled:picnic_scaled + distance2ocean_scaled:garbage_scaled + weekday:picnic_scaled + weekday:time_cos_scaled + distance2ocean_scaled:time_cos_scaled,
+combined_model_conflicts_sighting <- glm(encounter_binary ~ garbage_scaled + picnic_scaled + d2den_scaled + distance2water_scaled + distance2ocean_scaled + precip_scaled + max_temp_scaled + prop_natural_cover_100_scaled + prop_open_100_scaled + prop_developed_100_scaled + time_cos_scaled + Lockdown_Phase + weekday + Lockdown_Phase:time_cos_scaled + coyseason:d2den_scaled + garbage_scaled:picnic_scaled + weekday:Lockdown_Phase + distance2ocean_scaled:picnic_scaled + distance2ocean_scaled:garbage_scaled + weekday:picnic_scaled + weekday:time_cos_scaled + distance2ocean_scaled:time_cos_scaled,
                                          #Run as a logistic regression
                                          family = binomial(link = "logit"),
                                          #Run with reduced dataset
@@ -355,6 +355,49 @@ vif(top_model_2)
 #Model fit 'visreg' plots
 visreg(top_model_2, scale = "response", ylab = "Probability of report being of aggression or an attack", ylim = c(0,1)) 
 
+### Run model selection with subset of data where coord precision is <= 100m -----
+
+## Create dataset with only precise data
+
+df_precise_coords <- df_encounters_full %>%
+  filter(is.na(coord_confidence) | coord_confidence <= 100) %>%
+  #keep only variables to be included in analyses
+  dplyr::select(encounter_ID, date, weekday, encounter, encounter_binary, coyseason, Lockdown_Phase,
+                prop_open_100_scaled, prop_open_150_scaled, prop_open_200_scaled, prop_open_250_scaled,
+                prop_natural_cover_100_scaled, prop_natural_cover_150_scaled, prop_natural_cover_200_scaled, prop_natural_cover_250_scaled,
+                prop_developed_100_scaled, prop_developed_150_scaled, prop_developed_200_scaled, prop_developed_250_scaled,
+                garbage_scaled, picnic_scaled, distance2water_scaled, distance2ocean_scaled, d2den_scaled,
+                precip_scaled, avg_temp_scaled, min_temp_scaled, max_temp_scaled, time_cos_scaled, lon, lat) %>%
+  #remove any variables from outside study timeline
+  filter(!is.na(Lockdown_Phase)) %>%
+  #fix binary column so attacks and aggression are both 1 and sightings are 0
+  mutate(encounter_binary = ifelse(encounter_binary == 0, 0, 1),
+         #add factor column for cv
+         encounter_binary_fc = case_when(encounter_binary == 0 ~ "sighting",
+                                         encounter_binary == 1 ~ "encounter",
+                                         TRUE ~ NA_character_)) %>%
+  #remove all data points with NAs
+  na.omit()
+
+## Create global model
+
+#Model equation
+combined_model_conflicts_sighting_precise <- glm(encounter_binary ~ garbage_scaled + picnic_scaled + d2den_scaled + distance2water_scaled + distance2ocean_scaled + precip_scaled + max_temp_scaled + prop_natural_cover_100_scaled + prop_developed_100_scaled + time_cos_scaled + Lockdown_Phase + weekday + Lockdown_Phase:time_cos_scaled + coyseason:d2den_scaled + garbage_scaled:picnic_scaled + weekday:Lockdown_Phase + distance2ocean_scaled:picnic_scaled + distance2ocean_scaled:garbage_scaled + weekday:picnic_scaled + weekday:time_cos_scaled + distance2ocean_scaled:time_cos_scaled,
+                                         #Run as a logistic regression
+                                         family = binomial(link = "logit"),
+                                         #Run with dataset containing only reports with <=100m uncertainty radius
+                                         data = df_precise_coords,
+                                         #Set model to fail if NAs are detected. Mandatory setting for dredge function
+                                         na.action = na.fail)
+
+## Identify top models using BIC
+
+#Compare all nested models
+combined_conflict_sighting_precise_dredged <- dredge(combined_model_conflicts_sighting_precise, evaluate = TRUE, rank = "BIC")
+
+#View model rankings
+View(combined_conflict_sighting_precise_dredged)
+
 ### Stratified k-fold cross validation -----
 
 ## Define the control for k-fold CV with stratification based on the response variable
@@ -423,7 +466,7 @@ mean(df_model_2_results$Spec)
 
 ### Test for differences between expected and observed victim demographics and activities -----
 
-## Victim sex/age group expected totals
+## Victim gender/age group
 {
 #Sum of total humans (extrapolated to hour-long time blocks)
 total_humans <- sum(df_human_activity_blocks$male_adults_adjusted) + sum(df_human_activity_blocks$female_adults_adjusted) + sum(df_human_activity_blocks$children_adjusted)
@@ -463,7 +506,7 @@ df_victim_demos <- c(victim_demo_groups$MA[1], victim_demo_groups$FA[1], victim_
 chisq.test(df_victim_demos, p = c(expected_adult_males, expected_adult_females, expected_children))
 }
 
-## Victim activity expected totals
+## Victim activity
 {
 #Sum of total humans (extrapolated to hour-long time blocks)
 total_humans <- sum(df_human_activity_blocks$walkers_adjusted) + sum(df_human_activity_blocks$runners_adjusted) + sum(df_human_activity_blocks$wheels_adjusted)
@@ -480,9 +523,9 @@ victim_activity_groups <- df_encounters_full %>%
   #Keep only age and sex variables
   dplyr::select(victim_activity) %>%
   #Create column to group victims into walkers, runners, and wheels
-  mutate(victim_activity = ifelse(victim_activity == "walking", "walk",
-                                  ifelse(victim_activity == "running", "run",
-                                         ifelse(victim_activity == "scooter_collision", "wheels",
+  mutate(victim_activity = ifelse(victim_activity == "walking", "Walk",
+                                  ifelse(victim_activity == "running", "Run",
+                                         ifelse(victim_activity == "scooter_collision", "Wheels",
                                                 NA)))) %>%
   #Remove any that do not fit into an activity
   filter(!is.na(victim_activity)) %>%
@@ -499,11 +542,11 @@ victim_activity_groups <- df_encounters_full %>%
 
 ## Goodness of Fit for victim activity
 
-df_victim_activity <- c(victim_activity_groups$walk[1], victim_activity_groups$run[1], victim_activity_groups$wheels[1])
+df_victim_activity <- c(victim_activity_groups$Walk[1], victim_activity_groups$Run[1], victim_activity_groups$Wheels[1])
 chisq.test(df_victim_activity, p = c(expected_walkers, expected_runners, expected_wheels))
 }
 
-## Create subsetted dataset for dogs
+## Dog presence
 {
 df_expected_dogs <- df_individual_human_activity %>%
   #Keep only one row per group
@@ -533,13 +576,13 @@ expected_NoDogs <- df_expected_dogs$NoDogs[1]/total_groups
 ## Observed victims with/without dogs
 
 #No victims had dogs with them
-df_victim_dogs <- c(34, 0)
+victim_dogs <- c(34, 0)
 
 ## Goodness of Fit for dog presence
-chisq.test(df_victim_dogs, p = c(expected_NoDogs, expected_dogs))
+chisq.test(victim_dogs, p = c(expected_NoDogs, expected_dogs))
 }
 
-## Human group size expected totals
+## Human group size
 {
 df_human_group_size <- df_individual_human_activity %>%
   #Group dataset by group ID
@@ -593,7 +636,7 @@ chisq.test(c(victim_group_size$Individual[1],victim_group_size$Group[1]),
                  df_human_group_size$Group[1]/df_human_group_size$total[1]))
 }
 
-### Tables and figures from publication -----
+### Figures from publication -----
 
 ## Plot confidence intervals
 {
@@ -991,6 +1034,70 @@ df_encounters_full %>%
   #Set font size
   theme(text = element_text(size = 20),
         axis.text = element_text(size = 15))
+}
+
+## Human victim demographics multi-plot
+{
+  ## Activity
+  p_activity <- victim_activity_groups %>%
+    pivot_longer(cols = c(1:3), names_to = "Activity", values_to = "Observed") %>%
+    mutate(Expected = c(expected_runners*sum(victim_activity_groups), expected_walkers*sum(victim_activity_groups), expected_wheels*sum(victim_activity_groups))) %>%
+    pivot_longer(cols = c(Observed, Expected), names_to = "Category", values_to = "Frequency") %>%
+    ggplot(aes(x = Activity, y = Frequency, fill = Category)) +
+    geom_bar(position = "dodge", stat = "identity") +
+    theme_classic()
+  
+  ## Group size
+  p_group_size <- victim_group_size %>%
+    pivot_longer(cols = c(1:2), names_to = "Group Size", values_to = "Observed") %>%
+    mutate(Expected = c(df_human_group_size$Individual/df_human_group_size$total*sum(victim_group_size), df_human_group_size$Group/df_human_group_size$total*sum(victim_group_size))) %>%
+    pivot_longer(cols = c(Observed, Expected), names_to = "Category", values_to = "Frequency") %>%
+    ggplot(aes(x = `Group Size`, y = Frequency, fill = Category)) +
+    geom_bar(position = "dodge", stat = "identity") +
+    theme_classic()
+  
+  ## Age
+  p_demo <- victim_demo_groups %>%
+    pivot_longer(cols = c(1:3), names_to = "Group", values_to = "Observed") %>%
+    mutate(Expected = c(expected_adult_males*sum(victim_demo_groups), expected_adult_females*sum(victim_demo_groups), expected_children*sum(victim_demo_groups))) %>%
+    pivot_longer(cols = c(Observed, Expected), names_to = "Category", values_to = "Frequency") %>%
+    mutate(Group = case_when(
+      Group == "MA" ~ "Male adults",
+      Group == "FA" ~ "Female adults",
+      Group == "C" ~ "Children",
+      TRUE ~ NA_character_
+    )) %>%
+    ggplot(aes(x = Group, y = Frequency, fill = Category)) +
+    geom_bar(position = "dodge", stat = "identity") +
+    theme_classic()
+  
+  ## Dog Presence
+  p_dog <- as_tibble(victim_dogs) %>%
+    rename(Observed = value) %>%
+    mutate(Expected = c(expected_NoDogs*sum(victim_dogs), expected_dogs*sum(victim_dogs)),
+           Dogs = c("Absent", "Present")) %>%
+    pivot_longer(cols = c(Observed, Expected), names_to = "Category", values_to = "Frequency") %>%
+    ggplot(aes(x = Dogs, y = Frequency, fill = Category)) +
+    geom_bar(position = "dodge", stat = "identity") +
+    theme_classic()   
+
+  ## Combine all plots into one multi-panel plot
+  
+  #Include all individual plots
+  victim_multi_plot <- ggarrange(p_activity, p_group_size, p_demo, p_dog,
+                         #Define plot labels
+                         labels = c("A", "B", "C", "D"),
+                         #Arrange plot positions
+                         ncol = 2, nrow = 2,
+                         #Include legend
+                         common.legend = T,
+                         #Fix position of labels
+                         vjust = 0.5) 
+  
+  #Add titles and labels to the multi-panel graph
+  victim_multi_plot <- annotate_figure(victim_multi_plot)
+  victim_multi_plot
+  ggsave(filename = "SP_victims_multiplot.png", victim_multi_plot, dpi = "retina")
 }
 
 ## Human activity multi-plot for appendix
