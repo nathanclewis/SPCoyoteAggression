@@ -1058,16 +1058,16 @@ df_encounters_full %>%
   
   ## Age
   p_demo <- victim_demo_groups %>%
-    pivot_longer(cols = c(1:3), names_to = "Group", values_to = "Observed") %>%
+    pivot_longer(cols = c(1:3), names_to = "Gender/Age Group", values_to = "Observed") %>%
     mutate(Expected = c(expected_adult_males*sum(victim_demo_groups), expected_adult_females*sum(victim_demo_groups), expected_children*sum(victim_demo_groups))) %>%
     pivot_longer(cols = c(Observed, Expected), names_to = "Category", values_to = "Frequency") %>%
-    mutate(Group = case_when(
-      Group == "MA" ~ "Male adults",
-      Group == "FA" ~ "Female adults",
-      Group == "C" ~ "Children",
+    mutate(`Gender/Age Group` = case_when(
+      `Gender/Age Group` == "MA" ~ "Male adults",
+      `Gender/Age Group` == "FA" ~ "Female adults",
+      `Gender/Age Group` == "C" ~ "Children",
       TRUE ~ NA_character_
     )) %>%
-    ggplot(aes(x = Group, y = Frequency, fill = Category)) +
+    ggplot(aes(x = `Gender/Age Group`, y = Frequency, fill = Category)) +
     geom_bar(position = "dodge", stat = "identity") +
     theme_classic()
   
@@ -1084,7 +1084,7 @@ df_encounters_full %>%
   ## Combine all plots into one multi-panel plot
   
   #Include all individual plots
-  victim_multi_plot <- ggarrange(p_activity, p_group_size, p_demo, p_dog,
+  victim_multi_plot <- ggarrange(p_demo, p_activity, p_group_size, p_dog,
                          #Define plot labels
                          labels = c("A", "B", "C", "D"),
                          #Arrange plot positions
@@ -1097,7 +1097,7 @@ df_encounters_full %>%
   #Add titles and labels to the multi-panel graph
   victim_multi_plot <- annotate_figure(victim_multi_plot)
   victim_multi_plot
-  ggsave(filename = "SP_victims_multiplot.png", victim_multi_plot, dpi = "retina")
+  #ggsave(filename = "SP_victims_multiplot.png", victim_multi_plot, dpi = "retina")
 }
 
 ## Human activity multi-plot for appendix
