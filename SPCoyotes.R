@@ -1007,7 +1007,7 @@ multi_plot
 
 ## Plot interaction density over time
 {
-df_encounters_full %>%
+p_interactions_density <- df_encounters_full %>%
   #Fix name of non-contact aggressive encounters for display purposes
   mutate(encounter = ifelse(encounter == "Aggression to Human",
                             "Non-contact aggression",
@@ -1015,7 +1015,9 @@ df_encounters_full %>%
   #Create plot and set variables
   ggplot(aes(x=date, fill=encounter, color = encounter)) +
   #Format as density plot with mostly transparent fill
-  geom_density(alpha=.2) +
+  geom_density(alpha=0.2) +
+  #Add points to represent actual events
+  geom_jitter(aes(x = date, y = 0), height = 0.0008, width = 0) +
   #Remove gridlines
   theme_classic() +
   #Add vertical dotted lines at the beginning of restriction phases two and three
@@ -1034,6 +1036,9 @@ df_encounters_full %>%
   #Set font size
   theme(text = element_text(size = 20),
         axis.text = element_text(size = 15))
+  
+  #Save plot
+  #ggsave(filename = "SP_interactions/time_densityplot.png", p_interactions_density, dpi = "retina")
 }
 
 ## Human victim demographics multi-plot
