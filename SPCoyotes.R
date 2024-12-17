@@ -1005,6 +1005,73 @@ multi_plot
 #ggsave(filename = "SP_multiplot.png", multi_plot, dpi = "retina")
 }
 
+## Multi-plot for logistic regression model predictions
+{
+  ## Pandemic lockdown phase
+  vp_lockdown <- visreg(top_model_1, "Lockdown_Phase", scale = "response", gg = TRUE) +
+    theme_classic() +
+    labs(x = "Pandemic lockdown phase", y = "Probability of aggression") +
+    ylim(0,1)
+  
+  ## Distance to nearest den
+  vp_den <- visreg(top_model_1, "d2den_scaled", scale = "response", gg = TRUE) +
+    theme_classic() +
+    labs(x = "Distance to nearest den", y = "Probability of aggression") +
+    ylim(0,1)
+  
+  ## Distance to ocean
+  vp_ocean <- visreg(top_model_1, "distance2ocean_scaled", scale = "response", gg = TRUE) +
+    theme_classic() +
+    labs(x = "Distance to ocean", y = "Probability of aggression") +
+    ylim(0,1)
+  
+  ## Time of day
+  vp_time <- visreg(top_model_1, "time_cos_scaled", scale = "response", gg = TRUE) +
+    theme_classic() +
+    labs(x = "Time of day", y = "Probability of aggression") +
+    ylim(0,1)
+  
+  ## Precipitation
+  vp_precip <- visreg(top_model_1, "precip_scaled", scale = "response", gg = TRUE) +
+    theme_classic() +
+    labs(x = "Daily precipitation", y = "Probability of aggression") +
+    ylim(0,1)
+  
+  ## Distance to nearest garbage bin
+  vp_garbage <- visreg(top_model_2, "garbage_scaled", scale = "response", gg = TRUE) +
+    theme_classic() +
+    labs(x = "Distance to nearest garbage bin", y = "Probability of aggression") +
+    ylim(0,1)
+  
+  ## Weekday
+  vp_weekday <- visreg(top_model_1, "weekday", scale = "response", gg = TRUE) +
+    theme_classic() +
+    labs(x = "Weekday", y = "Probability of aggression") +
+    ylim(0,1)
+  
+  ## Distance to nearest picnic area
+  vp_picnic <- visreg(top_model_1, "picnic_scaled", scale = "response", gg = TRUE) +
+    theme_classic() +
+    labs(x = "Distance to nearest picnic area", y = "Probability of aggression") +
+    ylim(0,1)
+  
+  ## Combine all plots into one multi-panel plot
+  
+  #Include all individual plots
+  vp_multi_plot<- ggarrange(vp_lockdown, vp_den, vp_ocean, vp_time, vp_precip, vp_garbage, vp_weekday, vp_picnic,
+                         #Define plot labels
+                         labels = c("A", "B", "C", "D", "E", "F", "G", "H"), 
+                         #Arrange plot positions
+                         ncol = 3, nrow = 3,
+                         #Fix position of labels
+                         vjust = 1) 
+  
+  #Add titles and labels to the multi-panel graph
+  vp_multi_plot <- annotate_figure(vp_multi_plot)
+  vp_multi_plot
+  #ggsave(filename = "SP_visreg_multiplot.png", vp_multi_plot, dpi = "retina")
+}
+
 ## Plot interaction density over time
 {
 p_interactions_density <- df_encounters_full %>%
