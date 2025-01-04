@@ -97,6 +97,50 @@ Anova(human_all_variables_model)
 #Visualize model fit for individual variables
 visreg(human_all_variables_model, scale = "response")
 
+######### Test for non-linear effects -----
+
+df_nonlinear_tests <- df_encounters %>%
+  mutate(natural_cover_100_quad = prop_natural_cover_100_scaled^2,
+         dev_100_quad = prop_developed_100_scaled^2,
+         open_100_quad = prop_open_100_scaled^2,
+         picnic_quad = picnic_scaled^2)
+
+## Natural cover
+nat_linear <- glm(encounter_binary ~ prop_natural_cover_100_scaled,
+                  data = df_encounters,
+                  family = binomial(link = "logit"))
+nat_nonlinear <- glm(encounter_binary ~ prop_natural_cover_100_scaled + natural_cover_100_quad,
+                  data = df_nonlinear_tests,
+                  family = binomial(link = "logit"))
+AIC(nat_linear, nat_nonlinear)
+
+## Developed cover
+dev_linear <- glm(encounter_binary ~ prop_developed_100_scaled,
+                  data = df_encounters,
+                  family = binomial(link = "logit"))
+dev_nonlinear <- glm(encounter_binary ~ prop_developed_100_scaled + dev_100_quad,
+                     data = df_nonlinear_tests,
+                     family = binomial(link = "logit"))
+AIC(dev_linear, dev_nonlinear)
+
+## Open cover
+open_linear <- glm(encounter_binary ~ prop_open_100_scaled,
+                  data = df_encounters,
+                  family = binomial(link = "logit"))
+open_nonlinear <- glm(encounter_binary ~ prop_open_100_scaled + open_100_quad,
+                     data = df_nonlinear_tests,
+                     family = binomial(link = "logit"))
+AIC(open_linear, open_nonlinear)
+
+## Distance to nearest picnic area
+picnic_linear <- glm(encounter_binary ~ picnic_scaled,
+                  data = df_encounters,
+                  family = binomial(link = "logit"))
+picnic_nonlinear <- glm(encounter_binary ~ picnic_scaled + picnic_quad,
+                     data = df_nonlinear_tests,
+                     family = binomial(link = "logit"))
+AIC(picnic_linear, picnic_nonlinear)
+
 ### Test land cover radii with model selection -----
 
 {
