@@ -1129,7 +1129,7 @@ multi_plot<- ggarrange(p_lockdown, p_weekphase, p_season, p_den, p_ocean, p_time
 #Add titles and labels to the multi-panel graph
 multi_plot <- annotate_figure(multi_plot)
 multi_plot
-#ggsave(filename = "SP_multiplot.png", multi_plot, dpi = "retina")
+ggsave(filename = "SP_multiplot.png", multi_plot, dpi = "retina")
 }
 
 ## Multi-plot for logistic regression model predictions
@@ -1201,38 +1201,58 @@ multi_plot
 
 ## Plot interaction density over time
 {
+#Create data frame for seasons
+  df_seasons = tibble(
+    xmin = as.Date(c("2019-01-01", "2019-05-01", "2019-09-01", "2020-01-01", "2020-05-01", "2020-09-01", "2021-01-01", "2021-05-01")),
+    xmax = as.Date(c("2019-05-01", "2019-09-01", "2020-01-01", "2020-05-01", "2020-09-01", "2021-01-01", "2021-05-01", "2021-09-01")),
+    season_unordered = c("Breeding", "Pup-Rearing", "Dispersal", "Breeding", "Pup-Rearing", "Dispersal", "Breeding", "Pup-Rearing"),
+    Season = factor(season_unordered, levels = c("Breeding", "Pup-Rearing", "Dispersal"))
+  )
+
+#Create plot
 p_interactions_density <- df_encounters_full %>%
   #Fix name of non-contact aggressive encounters for display purposes
   mutate(encounter = ifelse(encounter == "Aggression to Human",
                             "Non-contact aggression",
                             encounter)) %>%
   #Create plot and set variables
-  ggplot(aes(x=date, fill=encounter, color = encounter)) +
-  #Format as density plot with mostly transparent fill
-  geom_density(alpha=0.2) +
-  #Add points to represent actual events
-  geom_jitter(aes(x = date, y = 0), height = 0.0008, width = 0) +
-  #Remove gridlines
-  theme_classic() +
-  #Add vertical dotted lines at the beginning of restriction phases two and three
-  geom_vline(xintercept = as.numeric(as.Date(c("2020-12-02", "2021-05-26"))), linetype = 'dotted') +
-  #Add a vertical dashed line at the beginning of restriction phase one
-  geom_vline(xintercept = as.numeric(as.Date("2020-03-11")), linetype = 'dashed') +
-  #Add labels to the inserted vertical lines
-  geom_label(aes(x=x,y=y,label=label),
-             inherit.aes = FALSE, #resolves error
-             data = data.frame(x = as.Date(c("2020-03-11","2020-12-02","2021-05-25")),
-                               y = c(0.009, 0.009, 0.009),
-                               label=c("Start of pandemic\nrestrictions","Indoor gatherings\nbanned","Indoor gatherings\npermitted")),
-             size = 4) +
-  #Set axis and legend labels
-  labs(x = "Date", y = "Density of reports", fill = "Report type", color = "Report type") +
-  #Set font size
-  theme(text = element_text(size = 20),
-        axis.text = element_text(size = 15))
+  ggplot(aes(x=date)) +
+    geom_rect(aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = -0.0009, fill = Season),
+              inherit.aes = FALSE, #resolves error
+              data = df_seasons) +
+    scale_fill_manual(values = c("Breeding" = "thistle",
+                                 "Pup-Rearing" = "orchid",
+                                 "Dispersal" = "purple")) +
+    #Create new fill legend for density plot
+    ggnewscale::new_scale("fill")+
+    #Format as density plot with mostly transparent fill
+    geom_density(aes(fill = encounter), alpha = 0.3) +
+    #Add points to represent actual events
+    geom_jitter(aes(x = date, y = 0, col = encounter), height = 0.0008, width = 0) +
+    #Remove gridlines
+    theme_classic() +
+    #Add vertical dotted lines at the beginning of restriction phases two and three
+    geom_vline(xintercept = as.numeric(as.Date(c("2020-12-02", "2021-05-26"))), linetype = 'dotted') +
+    #Add a vertical dashed line at the beginning of restriction phase one
+    geom_vline(xintercept = as.numeric(as.Date("2020-03-11")), linetype = 'dashed') +
+    #Add labels to the inserted vertical lines
+    geom_label(aes(x=x,y=y,label=label),
+               inherit.aes = FALSE, #resolves error
+               data = data.frame(x = as.Date(c("2020-03-11","2020-12-02","2021-05-25")),
+                                 y = c(0.009, 0.009, 0.009),
+                                 label=c("Start of pandemic\nrestrictions","Indoor gatherings\nbanned","Indoor gatherings\npermitted")),
+               size = 4) +
+    #Set axis and legend labels
+    labs(x = "Date", y = "Density of reports", fill = "Report type", color = "Report type") +
+    #Set font size
+    theme(text = element_text(size = 20),
+          axis.text = element_text(size = 15))
+  
+  #View plot
+  p_interactions_density
   
   #Save plot
-  #ggsave(filename = "SP_interactions/time_densityplot.png", p_interactions_density, dpi = "retina")
+  #ggsave(filename = "Plots/time_densityplot.png", p_interactions_density, dpi = "retina")
 }
 
 ## Human victim demographics multi-plot
