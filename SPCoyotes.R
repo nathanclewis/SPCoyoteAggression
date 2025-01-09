@@ -97,50 +97,6 @@ Anova(human_all_variables_model)
 #Visualize model fit for individual variables
 visreg(human_all_variables_model, scale = "response")
 
-######### Test for non-linear effects -----
-
-df_nonlinear_tests <- df_encounters %>%
-  mutate(natural_cover_100_quad = prop_natural_cover_100_scaled^2,
-         dev_100_quad = prop_developed_100_scaled^2,
-         open_100_quad = prop_open_100_scaled^2,
-         picnic_quad = picnic_scaled^2)
-
-## Natural cover
-nat_linear <- glm(encounter_binary ~ prop_natural_cover_100_scaled,
-                  data = df_encounters,
-                  family = binomial(link = "logit"))
-nat_nonlinear <- glm(encounter_binary ~ prop_natural_cover_100_scaled + natural_cover_100_quad,
-                  data = df_nonlinear_tests,
-                  family = binomial(link = "logit"))
-AIC(nat_linear, nat_nonlinear)
-
-## Developed cover
-dev_linear <- glm(encounter_binary ~ prop_developed_100_scaled,
-                  data = df_encounters,
-                  family = binomial(link = "logit"))
-dev_nonlinear <- glm(encounter_binary ~ prop_developed_100_scaled + dev_100_quad,
-                     data = df_nonlinear_tests,
-                     family = binomial(link = "logit"))
-AIC(dev_linear, dev_nonlinear)
-
-## Open cover
-open_linear <- glm(encounter_binary ~ prop_open_100_scaled,
-                  data = df_encounters,
-                  family = binomial(link = "logit"))
-open_nonlinear <- glm(encounter_binary ~ prop_open_100_scaled + open_100_quad,
-                     data = df_nonlinear_tests,
-                     family = binomial(link = "logit"))
-AIC(open_linear, open_nonlinear)
-
-## Distance to nearest picnic area
-picnic_linear <- glm(encounter_binary ~ picnic_scaled,
-                  data = df_encounters,
-                  family = binomial(link = "logit"))
-picnic_nonlinear <- glm(encounter_binary ~ picnic_scaled + picnic_quad,
-                     data = df_nonlinear_tests,
-                     family = binomial(link = "logit"))
-AIC(picnic_linear, picnic_nonlinear)
-
 ### Test land cover radii with model selection -----
 
 {
@@ -198,6 +154,9 @@ BIC(conflict_100m_model, conflict_150m_model, conflict_200m_model, conflict_250m
 
 ## All continuous variables
 cor(df_encounters[c(8, 12, 16, 20:29)], method = "pearson")
+
+## Degrees of freedom
+length(df_encounters$prop_open_100_scaled) - 2
 
 ## Lockdown phase and coyseason
 {
@@ -318,6 +277,130 @@ null_model <- glm(encounter_binary ~ 1,
 
 #Use BIC model selection to compare model fits
 BIC(coyseason_model, lockdown_model, null_model)
+}
+
+### Test for non-linear effects -----
+
+df_nonlinear_tests <- df_encounters %>%
+  mutate(nat_100_quad = prop_natural_cover_100_scaled^2,
+         dev_100_quad = prop_developed_100_scaled^2,
+         picnic_quad = picnic_scaled^2,
+         garb_quad = garbage_scaled^2,
+         d2den_quad = d2den_scaled^2,
+         d2ocean_quad = distance2ocean_scaled^2,
+         d2water_quad = distance2water_scaled^2,
+         precip_quad = picnic_scaled^2,
+         max_temp_quad = max_temp_scaled^2,
+         time_quad = time_cos_scaled^2)
+
+## Natural cover
+{
+nat_linear <- glm(encounter_binary ~ prop_natural_cover_100_scaled,
+                  data = df_encounters,
+                  family = binomial(link = "logit"))
+nat_nonlinear <- glm(encounter_binary ~ prop_natural_cover_100_scaled + nat_100_quad,
+                     data = df_nonlinear_tests,
+                     family = binomial(link = "logit"))
+AIC(nat_linear, nat_nonlinear)
+}
+
+## Developed cover
+{
+dev_linear <- glm(encounter_binary ~ prop_developed_100_scaled,
+                  data = df_encounters,
+                  family = binomial(link = "logit"))
+dev_nonlinear <- glm(encounter_binary ~ prop_developed_100_scaled + dev_100_quad,
+                     data = df_nonlinear_tests,
+                     family = binomial(link = "logit"))
+AIC(dev_linear, dev_nonlinear)
+}
+
+## Distance to nearest picnic area
+{
+picnic_linear <- glm(encounter_binary ~ picnic_scaled,
+                     data = df_encounters,
+                     family = binomial(link = "logit"))
+picnic_nonlinear <- glm(encounter_binary ~ picnic_scaled + picnic_quad,
+                        data = df_nonlinear_tests,
+                        family = binomial(link = "logit"))
+BIC(picnic_linear, picnic_nonlinear)
+}
+
+## Distance to nearest garbage bin
+{
+  garb_linear <- glm(encounter_binary ~ garbage_scaled,
+                       data = df_encounters,
+                       family = binomial(link = "logit"))
+  garb_nonlinear <- glm(encounter_binary ~ garbage_scaled + garb_quad,
+                          data = df_nonlinear_tests,
+                          family = binomial(link = "logit"))
+  BIC(garb_linear, garb_nonlinear)
+}
+
+## Distance to nearest den
+{
+  den_linear <- glm(encounter_binary ~ d2den_scaled,
+                       data = df_encounters,
+                       family = binomial(link = "logit"))
+  den_nonlinear <- glm(encounter_binary ~ d2den_scaled + d2den_quad,
+                          data = df_nonlinear_tests,
+                          family = binomial(link = "logit"))
+  BIC(den_linear, den_nonlinear)
+}
+
+## Distance to the ocean
+{
+  water_linear <- glm(encounter_binary ~ distance2water_scaled,
+                       data = df_encounters,
+                       family = binomial(link = "logit"))
+  water_nonlinear <- glm(encounter_binary ~ distance2water_scaled + d2water_quad,
+                          data = df_nonlinear_tests,
+                          family = binomial(link = "logit"))
+  BIC(water_linear, water_nonlinear)
+}
+
+## Distance to water
+{
+  ocean_linear <- glm(encounter_binary ~ distance2ocean_scaled,
+                      data = df_encounters,
+                      family = binomial(link = "logit"))
+  ocean_nonlinear <- glm(encounter_binary ~ distance2ocean_scaled + d2ocean_quad,
+                         data = df_nonlinear_tests,
+                         family = binomial(link = "logit"))
+  BIC(ocean_linear, ocean_nonlinear)
+}
+
+## Precipitation
+{
+  precip_linear <- glm(encounter_binary ~ precip_scaled,
+                      data = df_encounters,
+                      family = binomial(link = "logit"))
+  precip_nonlinear <- glm(encounter_binary ~ precip_scaled + precip_quad,
+                         data = df_nonlinear_tests,
+                         family = binomial(link = "logit"))
+  BIC(precip_linear, precip_nonlinear)
+}
+
+## Maximum daily temperature
+{
+  temp_linear <- glm(encounter_binary ~ max_temp_scaled,
+                      data = df_encounters,
+                      family = binomial(link = "logit"))
+  temp_nonlinear <- glm(encounter_binary ~ max_temp_scaled + max_temp_quad,
+                         data = df_nonlinear_tests,
+                         family = binomial(link = "logit"))
+  BIC(temp_linear, temp_nonlinear)
+}
+
+## Time of day
+{
+  time_linear <- glm(encounter_binary ~ time_cos_scaled,
+                      data = df_encounters,
+                      family = binomial(link = "logit"))
+  time_nonlinear <- glm(encounter_binary ~ time_cos_scaled + time_quad,
+                         data = df_nonlinear_tests,
+                         family = binomial(link = "logit"))
+  BIC(time_linear, time_nonlinear)
 }
 
 ### Run model selection on retained variables -----
@@ -920,9 +1003,9 @@ p_time <- df_encounters_full %>%
   geom_text(aes(x=x,y=y,label=label),
             inherit.aes = FALSE, #resolves error
             data = data.frame(x = c(-0.8, 0, 0, 0.8)),
-            y = c(0.1, 0.2, 0.05, 0.1),
+            y = c(0.1, 0.27, 0.08, 0.1),
             label=c("0200 hours","0800 hours","2000 hours","1400 hours"),
-            size = 5)
+            size = 3)
 
 ## Distance from ocean
 p_ocean <- df_encounters_full %>%
@@ -1033,7 +1116,7 @@ p_developed <- df_encounters_full %>%
 ## Combine all plots into one multi-panel plot
 
 #Include all individual plots
-multi_plot<- ggarrange(p_lockdown, p_den, p_ocean, p_time, p_precip, p_garbage, p_weekphase, p_picnic, p_season, p_water, p_natural, p_developed, p_open, p_maxtemp,
+multi_plot<- ggarrange(p_lockdown, p_weekphase, p_season, p_den, p_ocean, p_time, p_precip, p_garbage, p_picnic, p_water, p_natural, p_developed, p_open, p_maxtemp,
                        #Define plot labels
                        labels = c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"), 
                        #Arrange plot positions
