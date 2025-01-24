@@ -1330,74 +1330,74 @@ multi_plot <- annotate_figure(multi_plot); multi_plot
   ## Pandemic lockdown phase
   vp_lockdown <- visreg(top_model_1, "Lockdown_Phase", scale = "response", gg = TRUE) +
     theme_classic() +
-    labs(x = "Pandemic lockdown phase", y = "Probability of aggression") +
+    labs(x = "Pandemic lockdown phase", y = "Probability\nof aggression") +
     ylim(0,1) +
     #Set text size
     theme(axis.text = element_text(size = 14),
-          axis.title = element_text(size = 14))
+          axis.title = element_text(size = 16))
   
   ## Distance to nearest den
   vp_den <- visreg(top_model_1, "d2den_scaled", scale = "response", gg = TRUE) +
     theme_classic() +
-    labs(x = "Distance to nearest den", y = "Probability of aggression") +
+    labs(x = "Distance to nearest den", y = "Probability\nof aggression") +
     ylim(0,1) +
     #Set text size
     theme(axis.text = element_text(size = 14),
-          axis.title = element_text(size = 14))
+          axis.title = element_text(size = 16))
   
   ## Distance to ocean
   vp_ocean <- visreg(top_model_1, "distance2ocean_scaled", scale = "response", gg = TRUE) +
     theme_classic() +
-    labs(x = "Distance to ocean", y = "Probability of aggression") +
+    labs(x = "Distance to ocean", y = "Probability\nof aggression") +
     ylim(0,1) +
     #Set text size
     theme(axis.text = element_text(size = 14),
-          axis.title = element_text(size = 14))
+          axis.title = element_text(size = 16))
   
   ## Time of day
   vp_time <- visreg(top_model_1, "time_cos_scaled", scale = "response", gg = TRUE) +
     theme_classic() +
-    labs(x = "Time of day", y = "Probability of aggression") +
+    labs(x = "Time of day", y = "Probability\nof aggression") +
     ylim(0,1) +
     #Set text size
     theme(axis.text = element_text(size = 14),
-          axis.title = element_text(size = 14))
+          axis.title = element_text(size = 16))
   
   ## Precipitation
   vp_precip <- visreg(top_model_1, "precip_scaled", scale = "response", gg = TRUE) +
     theme_classic() +
-    labs(x = "Daily precipitation", y = "Probability of aggression") +
+    labs(x = "Daily precipitation", y = "Probability\nof aggression") +
     ylim(0,1) +
     #Set text size
     theme(axis.text = element_text(size = 14),
-          axis.title = element_text(size = 14))
+          axis.title = element_text(size = 16))
   
   ## Distance to nearest garbage bin
   vp_garbage <- visreg(top_model_2, "garbage_scaled", scale = "response", gg = TRUE) +
     theme_classic() +
-    labs(x = "Distance to nearest garbage bin", y = "Probability of aggression") +
+    labs(x = "Distance to nearest garbage bin", y = "Probability\nof aggression") +
     ylim(0,1) +
     #Set text size
     theme(axis.text = element_text(size = 14),
-          axis.title = element_text(size = 14))
+          axis.title = element_text(size = 16))
   
   ## Weekday
   vp_weekday <- visreg(top_model_1, "weekday", scale = "response", gg = TRUE) +
     theme_classic() +
-    labs(x = "Weekday", y = "Probability of aggression") +
+    labs(x = "Weekday", y = "Probability\nof aggression") +
     ylim(0,1) +
     #Set text size
     theme(axis.text = element_text(size = 14),
-          axis.title = element_text(size = 14))
+          axis.title = element_text(size = 16))
   
   ## Distance to nearest picnic area
   vp_picnic <- visreg(top_model_1, "picnic_scaled", scale = "response", gg = TRUE) +
     theme_classic() +
-    labs(x = "Distance to nearest picnic area", y = "Probability of aggression") +
+    labs(x = "Distance to nearest picnic area", y = "Probability\nof aggression") +
     ylim(0,1) +
     #Set text size
     theme(axis.text = element_text(size = 14),
-          axis.title = element_text(size = 14))
+          axis.title = element_text(size = 16))
   
   ## Combine all plots into one multi-panel plot
   
@@ -1406,7 +1406,7 @@ multi_plot <- annotate_figure(multi_plot); multi_plot
                          #Define plot labels
                          labels = c("A", "B", "C", "D", "E", "F", "G", "H"), 
                          #Arrange plot positions
-                         ncol = 3, nrow = 3,
+                         ncol = 2, nrow = 4,
                          #Fix position of labels
                          vjust = 1) 
   
@@ -1415,7 +1415,7 @@ multi_plot <- annotate_figure(multi_plot); multi_plot
   vp_multi_plot
   
   #Save plot
-  #ggsave(filename = "Plots/SP_visreg_multiplot.png", vp_multi_plot, dpi = "retina")
+  ggsave(filename = "Plots/SP_visreg_multiplot.png", vp_multi_plot, dpi = "retina")
 }
 
 ## Plot interaction density over time
@@ -1467,22 +1467,22 @@ p_interactions_density <- df_encounters_full %>%
                #Resolves error
                inherit.aes = FALSE,
                #Specifications for location and text of each label
-               data = data.frame(x = as.Date(c("2020-03-11","2020-12-02","2021-05-25")),
-                                 y = c(0.009, 0.009, 0.009),
-                                 label=c("Start of pandemic\nrestrictions","Indoor gatherings\nbanned","Indoor gatherings\npermitted")),
+               data = data.frame(x = as.Date(c("2020-03-11","2020-10-30","2021-06-20")),
+                                 y = c(0.009, 0.009, 0.00875),
+                                 label=c("Start of pandemic\nrestrictions","Indoor gatherings\nprohibited","Indoor gatherings\npermitted with\nrestrictions")),
                #Set text size
-               size = 6) +
+               size = 8) +
     #Set axis and legend labels
     labs(x = "Date", y = "Density of reports", fill = "Report type", color = "Report type") +
     #Set font size
-    theme(text = element_text(size = 24),
-          axis.text = element_text(size = 24))
+    theme(text = element_text(size = 30),
+          axis.text = element_text(size = 30))
 
   #View plot
   p_interactions_density
   
   #Save plot
-  #ggsave(filename = "Plots/time_densityplot.png", p_interactions_density, dpi = "retina")
+  ggsave(filename = "Plots/time_densityplot.png", p_interactions_density, dpi = "retina")
 }
 
 ## Human victim demographics multi-plot
