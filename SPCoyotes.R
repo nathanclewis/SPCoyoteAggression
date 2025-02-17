@@ -1415,7 +1415,7 @@ multi_plot <- annotate_figure(multi_plot); multi_plot
   vp_multi_plot
   
   #Save plot
-  ggsave(filename = "Plots/SP_visreg_multiplot.png", vp_multi_plot, dpi = "retina")
+  #ggsave(filename = "Plots/SP_visreg_multiplot.png", vp_multi_plot, dpi = "retina")
 }
 
 ## Plot interaction density over time
