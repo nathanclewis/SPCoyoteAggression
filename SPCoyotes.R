@@ -1587,7 +1587,7 @@ p_interactions_density <- df_encounters_full %>%
                          #Include legend
                          common.legend = T,
                          #Fix position of labels
-                         vjust = 0.5) 
+                         vjust = 0.5)
   
   #Add titles and labels to the multi-panel graph
   victim_multi_plot <- annotate_figure(victim_multi_plot)
