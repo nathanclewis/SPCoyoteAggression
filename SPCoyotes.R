@@ -53,6 +53,8 @@ df_encounters <- df_encounters_full %>%
          encounter_binary_fc = case_when(encounter_binary == 0 ~ "sighting",
                                          encounter_binary == 1 ~ "encounter",
                                          TRUE ~ NA_character_)) %>%
+  #change reference category from weekday to weekend
+  mutate(weekday = fct_relevel(weekday, "weekend")) %>%
   #remove all data points with NAs
   na.omit()
 
@@ -914,12 +916,12 @@ chisq.test(c(victim_group_size$Individual[1],victim_group_size$Group[1]),
 ## Plot confidence intervals
 {
 #List of variables in each model
-Variables_model_1 = c("Intercept", "Distance from den", "Distance from ocean", "Lockdown phase 2: Social\ngatherings prohibited", "Lockdown phase 3: Social\ngatherings limited", "Distance from picnic area", "Daily precipitation", "Time of day", "Weekend")
-Variables_model_2 = c("Intercept", "Distance from den", "Distance from ocean", "Lockdown phase 2: Social\ngatherings prohibited", "Lockdown phase 3: Social\ngatherings limited", "Distance from garbage bin", "Daily precipitation", "Time of day", "Weekend")
+Variables_model_1 = c("Intercept", "Distance from den", "Distance from ocean", "Lockdown phase 2: Social\ngatherings prohibited", "Lockdown phase 3: Social\ngatherings limited", "Distance from picnic area", "Daily precipitation", "Time of day", "Weekday")
+Variables_model_2 = c("Intercept", "Distance from den", "Distance from ocean", "Lockdown phase 2: Social\ngatherings prohibited", "Lockdown phase 3: Social\ngatherings limited", "Distance from garbage bin", "Daily precipitation", "Time of day", "Weekday")
 
 #List of coefficients for each variable in each model
-coefficients_1 = c(-5.0185, -0.9734, -0.6069, 3.8010, 3.2220, 0.6079, 0.4698, -0.8824, -1.4404)
-coefficients_2 = c(-5.0017, -0.7469, -0.4808, 3.7972, 3.1186, 0.4555, 0.4352, -0.8396, -1.2830)
+coefficients_1 = c(-6.4588, -0.9734, -0.6069, 3.8010, 3.2220, 0.6079, 0.4698, -0.8824, 1.4404)
+coefficients_2 = c(-6.2847, -0.7469, -0.4808, 3.7972, 3.1186, 0.4555, 0.4352, -0.8396, 1.2830)
 
 #Create dataframe with confidence intervals for model 1
 CI_model_1 <- as_tibble(confint(top_model_1)) %>%
@@ -928,7 +930,7 @@ CI_model_1 <- as_tibble(confint(top_model_1)) %>%
   #Switch dataframe to long format
   pivot_longer(cols = c(`2.5 %`, `97.5 %`) , names_to = "Level", values_to = "CL") %>%
   #Set order of variables for presentation in plot
-  mutate(Variable=factor(Variables_model_1,levels = c("Daily precipitation", "Distance from picnic area", "Distance from ocean","Time of day", "Distance from den", "Weekend", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")),
+  mutate(Variable=factor(Variables_model_1,levels = c("Daily precipitation", "Distance from picnic area", "Distance from ocean","Time of day", "Distance from den", "Weekday", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")),
   #Add model label
          Model = "Model 1") %>%
   #Rename coefficients column to match other model df
@@ -943,7 +945,7 @@ CI_model_2 <- as_tibble(confint(top_model_2)) %>%
   #Switch dataframe to long format
   pivot_longer(cols = c(`2.5 %`, `97.5 %`) , names_to = "Level", values_to = "CL") %>%
   #Set order of variables
-  mutate(Variable=factor(Variables_model_2,levels = c("Daily precipitation","Distance from garbage bin","Distance from ocean","Time of day", "Distance from den", "Weekend", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")),
+  mutate(Variable=factor(Variables_model_2,levels = c("Daily precipitation","Distance from garbage bin","Distance from ocean","Time of day", "Distance from den", "Weekday", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")),
          #Add model label
          Model = "Model 2") %>%
   #Rename coefficients column to match other model df
@@ -957,9 +959,9 @@ CIs <- CI_model_1 %>%
 
 #Create plot and specify variables
 p_conf_ints <- ggplot(CIs,
-                      aes(x = CL, y = factor(Variable, levels = c("Daily precipitation","Distance from garbage bin","Distance from ocean","Distance from picnic area","Time of day", "Distance from den", "Weekend", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")))) +
+                      aes(x = CL, y = factor(Variable, levels = c("Daily precipitation","Distance from garbage bin","Distance from ocean","Distance from picnic area","Time of day", "Distance from den", "Weekday", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")))) +
   #Format data into lines
-  geom_line(aes(col = Model), size = 2) +
+  geom_line(aes(col = Model), linewidth = 2) +
   #Add dashed vertical line at x=0
   geom_vline(xintercept = 0, linetype = "dashed") +
   #Add horizontal lines to separate types of variables
