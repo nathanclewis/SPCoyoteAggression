@@ -913,10 +913,12 @@ chisq.test(c(victim_group_size$Individual[1],victim_group_size$Group[1]),
 
 ### Post-hoc test for victim activities -----
 
-## Calculate significance threshold (alpha) using Bonferroni correction
+## Calculate significance threshold using Bonferroni correction
+
+#Divide alpha by the number of categories
 a = 0.05/3;a
 
-## Calculate two-tailed z-score
+# Calculate two-tailed z-score
 p = 1 - a/2;p
 z = qnorm(p);z
 
@@ -934,12 +936,15 @@ SR_wheel = (df_victim_activity[3] - expected_wheels*sum(df_victim_activity))/sqr
 ## Evaluate significance using standardized residuals and Bonferroni-corrected z-value
 
 #Walkers
+p_walk = 2 * (1 - pnorm(abs(SR_walk)));p_walk
 ifelse(abs(SR_walk) > z, "Significant", "Not significant")
 
 #Runners
+p_run = 2 * (1 - pnorm(abs(SR_run)));p_run
 ifelse(abs(SR_run) > z, "Significant", "Not significant")
 
 #Wheels
+p_wheel = 2 * (1 - pnorm(abs(SR_wheel)));p_wheel
 ifelse(abs(SR_wheel) > z, "Significant", "Not significant")
 
 ### Figures from publication -----
