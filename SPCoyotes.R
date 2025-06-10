@@ -739,7 +739,7 @@ mean(df_model_2_results$ROC)
 mean(df_model_2_results$Sens)
 mean(df_model_2_results$Spec)
 
-### Test for differences between expected and observed victim demographics and activities -----
+### Chi-square test for differences between expected and observed victim characteristics -----
 
 ## Victim gender/age group
 {
@@ -910,6 +910,37 @@ chisq.test(c(victim_group_size$Individual[1],victim_group_size$Group[1]),
            p = c(df_human_group_size$Individual[1]/df_human_group_size$total[1],
                  df_human_group_size$Group[1]/df_human_group_size$total[1]))
 }
+
+### Post-hoc test for victim activities -----
+
+## Calculate significance threshold (alpha) using Bonferroni correction
+a = 0.05/3;a
+
+## Calculate two-tailed z-score
+p = 1 - a/2;p
+z = qnorm(p);z
+
+## Calculate standardized residuals
+
+#Walkers
+SR_walk = (df_victim_activity[1] - expected_walkers*sum(df_victim_activity))/sqrt(expected_walkers*sum(df_victim_activity)); SR_walk
+
+#Runners
+SR_run = (df_victim_activity[2] - expected_runners*sum(df_victim_activity))/sqrt(expected_runners*sum(df_victim_activity)); SR_run
+
+#Wheels
+SR_wheel = (df_victim_activity[3] - expected_wheels*sum(df_victim_activity))/sqrt(expected_wheels*sum(df_victim_activity)); SR_wheel
+
+## Evaluate significance using standardized residuals and Bonferroni-corrected z-value
+
+#Walkers
+ifelse(abs(SR_walk) > z, "Significant", "Not significant")
+
+#Runners
+ifelse(abs(SR_run) > z, "Significant", "Not significant")
+
+#Wheels
+ifelse(abs(SR_wheel) > z, "Significant", "Not significant")
 
 ### Figures from publication -----
 
