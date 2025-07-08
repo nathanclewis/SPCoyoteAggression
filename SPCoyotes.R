@@ -818,7 +818,7 @@ victim_activity_groups <- df_encounters_full %>%
 ## Goodness of Fit for victim activity
 
 df_victim_activity <- c(victim_activity_groups$Walk[1], victim_activity_groups$Run[1], victim_activity_groups$Wheels[1])
-chisq.test(df_victim_activity, p = c(expected_walkers, expected_runners, expected_wheels))
+vic_act_results <- chisq.test(df_victim_activity, p = c(expected_walkers, expected_runners, expected_wheels))
 }
 
 ## Dog presence
@@ -913,39 +913,15 @@ chisq.test(c(victim_group_size$Individual[1],victim_group_size$Group[1]),
 
 ### Post-hoc test for victim activities -----
 
-## Calculate significance threshold using Bonferroni correction
-
-#Divide alpha by the number of categories
-a = 0.05/3;a
-
-# Calculate two-tailed z-score
-p = 1 - a/2;p
-z = qnorm(p);z
-
 ## Calculate standardized residuals
 
-#Walkers
-SR_walk = (df_victim_activity[1] - expected_walkers*sum(df_victim_activity))/sqrt(expected_walkers*sum(df_victim_activity)); SR_walk
+vic_act_sr <- vic_act_results$stdres;vic_act_sr
 
-#Runners
-SR_run = (df_victim_activity[2] - expected_runners*sum(df_victim_activity))/sqrt(expected_runners*sum(df_victim_activity)); SR_run
+## Evaluate significance using standardized residuals and Benjamini-Hochberg correction
 
-#Wheels
-SR_wheel = (df_victim_activity[3] - expected_wheels*sum(df_victim_activity))/sqrt(expected_wheels*sum(df_victim_activity)); SR_wheel
+p_vals <- 2 * (1 - pnorm(abs(vic_act_sr)))
 
-## Evaluate significance using standardized residuals and Bonferroni-corrected z-value
-
-#Walkers
-p_walk = 2 * (1 - pnorm(abs(SR_walk)));p_walk
-ifelse(abs(SR_walk) > z, "Significant", "Not significant")
-
-#Runners
-p_run = 2 * (1 - pnorm(abs(SR_run)));p_run
-ifelse(abs(SR_run) > z, "Significant", "Not significant")
-
-#Wheels
-p_wheel = 2 * (1 - pnorm(abs(SR_wheel)));p_wheel
-ifelse(abs(SR_wheel) > z, "Significant", "Not significant")
+p_adj <- p.adjust(p_vals, method = "BH");p_adj
 
 ### Figures from publication -----
 
