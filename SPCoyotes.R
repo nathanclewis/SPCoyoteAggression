@@ -998,7 +998,7 @@ p_conf_ints <- ggplot(CIs,
   scale_x_continuous(breaks = c(-6,-4,-2,0,2,4,6)); p_conf_ints
 
 #Save plot
-ggsave(filename = "Plots/conf_ints.png", p_conf_ints, dpi = "retina")
+#ggsave(filename = "Plots/conf_ints.tiff", p_conf_ints, dpi = "retina")
 }
 
 ## Multi-plot for logistic regression variables
@@ -1022,6 +1022,8 @@ p_lockdown <- df_encounters_full %>%
     #Set labels
     labs(x = "Pandemic social restriction phase",
          y = "Reports", fill = "Report type") +
+    #Set y-axis breaks
+    scale_y_continuous(breaks = c(0,75, 150)) +
     #Set text size
     theme(axis.text = element_text(size = 14),
           axis.title = element_text(size = 14),
@@ -1078,7 +1080,9 @@ p_weekphase <- df_encounters_full %>%
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 14),
         legend.text = element_text(size = 14),
-        legend.title = element_text(size = 14))
+        legend.title = element_text(size = 14)) +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,150,300))
 
 ## Distance from den
 p_den <- df_encounters_full %>%
@@ -1142,7 +1146,9 @@ p_maxtemp <- df_encounters_full %>%
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 14),
         legend.text = element_text(size = 14),
-        legend.title = element_text(size = 14))
+        legend.title = element_text(size = 14)) +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,0.3,0.6))
 
 ## Time of day
 p_time <- df_encounters_full %>%
@@ -1169,7 +1175,9 @@ p_time <- df_encounters_full %>%
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 14),
         legend.text = element_text(size = 14),
-        legend.title = element_text(size = 14))
+        legend.title = element_text(size = 14)) +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,0.4,0.8))
 
 ## Distance from ocean
 p_ocean <- df_encounters_full %>%
@@ -1297,7 +1305,9 @@ p_open <- df_encounters_full %>%
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 14),
         legend.text = element_text(size = 14),
-        legend.title = element_text(size = 14))
+        legend.title = element_text(size = 14)) +
+  #Set y-axis breaks
+  scale_y_continuous(breaks = c(0,3,6,9))
 
 ## Proportion of 100m buffer - developed
 p_developed <- df_encounters_full %>%
@@ -1336,7 +1346,7 @@ multi_plot<- ggarrange(p_lockdown, p_weekphase, p_season, p_den, p_ocean, p_time
 multi_plot <- annotate_figure(multi_plot); multi_plot
 
 #Save plot
-#ggsave(filename = "Plots/SP_rawdata_multiplot.png", multi_plot, dpi = "retina")
+#ggsave(filename = "Plots/SP_rawdata_multiplot.tiff", multi_plot, dpi = "retina")
 }
 
 ## Multi-plot for logistic regression model predictions
@@ -1425,11 +1435,10 @@ multi_plot <- annotate_figure(multi_plot); multi_plot
                          vjust = 1) 
   
   #Add titles and labels to the multi-panel graph
-  vp_multi_plot <- annotate_figure(vp_multi_plot)
-  vp_multi_plot
+  vp_multi_plot <- annotate_figure(vp_multi_plot); vp_multi_plot
   
   #Save plot
-  #ggsave(filename = "Plots/SP_visreg_multiplot.png", vp_multi_plot, dpi = "retina")
+  #ggsave(filename = "Plots/SP_visreg_multiplot.tiff", vp_multi_plot, dpi = "retina")
 }
 
 ## Plot interaction density over time
@@ -1496,7 +1505,7 @@ p_interactions_density <- df_encounters_full %>%
   p_interactions_density
   
   #Save plot
-  ggsave(filename = "Plots/time_densityplot.png", p_interactions_density, dpi = "retina")
+  #ggsave(filename = "Plots/time_densityplot.tiff", p_interactions_density, dpi = "retina")
 }
 
 ## Human victim demographics multi-plot
@@ -1604,13 +1613,21 @@ p_interactions_density <- df_encounters_full %>%
                          vjust = 0.5)
   
   #Add titles and labels to the multi-panel graph
-  victim_multi_plot <- annotate_figure(victim_multi_plot)
+  victim_multi_plot <- annotate_figure(victim_multi_plot) +
+    #make the background white
+    theme(
+      panel.background = element_rect(fill = "white", color = NA),
+      plot.background = element_rect(fill = "white", color = NA),
+      legend.background = element_rect(fill = "white", color = NA),
+      legend.box.background = element_rect(fill = "white", color = NA)
+    )
+  
   
   #View plot
   victim_multi_plot
   
   #Save plot
-  #ggsave(filename = "Plots/SP_victims_multiplot.png", victim_multi_plot, dpi = "retina")
+  #ggsave(filename = "Plots/SP_victims_multiplot.tiff", victim_multi_plot, dpi = "retina")
 }
 
 ## Human activity (2024) multi-plot for appendix
