@@ -507,7 +507,7 @@ df_nonlinear_tests <- df_encounters %>%
 ## Create global model
 
 #Model equation
-combined_model_conflicts_sighting <- glm(encounter_binary ~ garbage_scaled + picnic_scaled + d2den_scaled + distance2water_scaled + distance2ocean_scaled + precip_scaled + max_temp_scaled + prop_natural_cover_100_scaled + prop_open_100_scaled + prop_developed_100_scaled + time_cos_scaled + weekday + Lockdown_Phase + Lockdown_Phase:time_cos_scaled + Lockdown_Phase:weekday + coyseason:d2den_scaled + garbage_scaled:picnic_scaled + distance2ocean_scaled:picnic_scaled + distance2ocean_scaled:garbage_scaled + weekday:picnic_scaled + weekday:time_cos_scaled + distance2ocean_scaled:time_cos_scaled,
+combined_model_conflicts_sighting <- glm(encounter_binary ~ garbage_scaled + picnic_scaled + d2den_scaled + distance2water_scaled + distance2ocean_scaled + precip_scaled + max_temp_scaled + prop_natural_cover_100_scaled + prop_developed_100_scaled + time_cos_scaled + weekday + Lockdown_Phase + Lockdown_Phase:time_cos_scaled + Lockdown_Phase:weekday + coyseason:d2den_scaled + garbage_scaled:picnic_scaled + distance2ocean_scaled:picnic_scaled + distance2ocean_scaled:garbage_scaled + weekday:picnic_scaled + weekday:time_cos_scaled + distance2ocean_scaled:time_cos_scaled,
                                          #Run as a logistic regression
                                          family = binomial(link = "logit"),
                                          #Run with reduced dataset
@@ -927,78 +927,101 @@ p_adj <- p.adjust(p_vals, method = "BH");p_adj
 
 ## Plot confidence intervals
 {
-#List of variables in each model
-Variables_model_1 = c("Intercept", "Distance from den", "Distance from ocean", "Lockdown phase 2: Social\ngatherings prohibited", "Lockdown phase 3: Social\ngatherings limited", "Distance from picnic area", "Daily precipitation", "Time of day", "Weekday")
-Variables_model_2 = c("Intercept", "Distance from den", "Distance from ocean", "Lockdown phase 2: Social\ngatherings prohibited", "Lockdown phase 3: Social\ngatherings limited", "Distance from garbage bin", "Daily precipitation", "Time of day", "Weekday")
-
-#List of coefficients for each variable in each model
-coefficients_1 = c(-6.4588, -0.9734, -0.6069, 3.8010, 3.2220, 0.6079, 0.4698, -0.8824, 1.4404)
-coefficients_2 = c(-6.2847, -0.7469, -0.4808, 3.7972, 3.1186, 0.4555, 0.4352, -0.8396, 1.2830)
-
-#Create dataframe with confidence intervals for model 1
-CI_model_1 <- as_tibble(confint(top_model_1)) %>%
-  #Add lists of variables and coefficients
-  cbind(Variables_model_1, coefficients_1) %>%
-  #Switch dataframe to long format
-  pivot_longer(cols = c(`2.5 %`, `97.5 %`) , names_to = "Level", values_to = "CL") %>%
-  #Set order of variables for presentation in plot
-  mutate(Variable=factor(Variables_model_1,levels = c("Daily precipitation", "Distance from picnic area", "Distance from ocean","Time of day", "Distance from den", "Weekday", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")),
-  #Add model label
-         Model = "Model 1") %>%
-  #Rename coefficients column to match other model df
-  rename(Coefficient = coefficients_1) %>%
-  #Keep only necessary columns
-  dplyr::select(Model, Variable, Coefficient, Level, CL)
-
-#Create dataframe with confidence intervals for model 2
-CI_model_2 <- as_tibble(confint(top_model_2)) %>%
-  #Add lists of variables and coefficients
-  cbind(Variables_model_2, coefficients_2) %>%
-  #Switch dataframe to long format
-  pivot_longer(cols = c(`2.5 %`, `97.5 %`) , names_to = "Level", values_to = "CL") %>%
-  #Set order of variables
-  mutate(Variable=factor(Variables_model_2,levels = c("Daily precipitation","Distance from garbage bin","Distance from ocean","Time of day", "Distance from den", "Weekday", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")),
-         #Add model label
-         Model = "Model 2") %>%
-  #Rename coefficients column to match other model df
-  rename(Coefficient = coefficients_2) %>%
-  #Keep only necessary columns
-  dplyr::select(Model, Variable, Coefficient, Level, CL)
-
-#Combine dfs for top models
-CIs <- CI_model_1 %>%
-  full_join(CI_model_2)
-
-#Create plot and specify variables
-p_conf_ints <- ggplot(CIs,
-                      aes(x = CL, y = factor(Variable, levels = c("Daily precipitation","Distance from garbage bin","Distance from ocean","Distance from picnic area","Time of day", "Distance from den", "Weekday", "Lockdown phase 3: Social\ngatherings limited", "Lockdown phase 2: Social\ngatherings prohibited", "Intercept")))) +
-  #Format data into lines
-  geom_line(aes(col = Model), linewidth = 2) +
-  #Add dashed vertical line at x=0
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  #Add horizontal lines to separate types of variables
-  geom_hline(yintercept = c(6.5, 9.5)) +
-  #Add sections labels, and specify locations
-  geom_text(data = data.frame(x = c(-7,-7,-7),
-                              y = c(6.3,9.3,10.3),
-                              label=c("Continuous variables","Categorical variables","Intercept")),
-            aes(x=x,y=y,label=label, group = x), size = 5, hjust = 0) +
-  #Set theme to black and white
-  theme_classic() +
-  #Set axis labels
-  labs(x = "95% Confidence Intervals", y = "") +
-  #Add points for coefficients
-  geom_point(CIs, mapping = aes(x = Coefficient, col = Model), size = 5, alpha = 0.5) +
-  #Remove legend
-  theme(legend.position="none") +
-  #Set text size
-  theme(axis.text = element_text(size = 16),
-        axis.title = element_text(size = 18)) +
-  #Set x-axis breaks
-  scale_x_continuous(breaks = c(-6,-4,-2,0,2,4,6)); p_conf_ints
-
-#Save plot
-#ggsave(filename = "Plots/conf_ints.tiff", p_conf_ints, dpi = "retina")
+  # List of variables in each model
+  Variables_model_1 <- c("Intercept", "Distance from den", "Distance from ocean",
+                         "Lockdown phase 2: Social\ngatherings prohibited",
+                         "Lockdown phase 3: Social\ngatherings limited",
+                         "Distance from picnic area", "Daily precipitation",
+                         "Time of day", "Weekday")
+  
+  Variables_model_2 <- c("Intercept", "Distance from den", "Distance from ocean",
+                         "Lockdown phase 2: Social\ngatherings prohibited",
+                         "Lockdown phase 3: Social\ngatherings limited",
+                         "Distance from garbage bin", "Daily precipitation",
+                         "Time of day", "Weekday")
+  
+  # List of coefficients
+  coefficients_1 <- c(-6.4588, -0.9734, -0.6069, 3.8010, 3.2220, 0.6079, 0.4698, -0.8824, 1.4404)
+  coefficients_2 <- c(-6.2847, -0.7469, -0.4808, 3.7972, 3.1186, 0.4555, 0.4352, -0.8396, 1.2830)
+  
+  # Desired plotting order
+  var_levels <- c("Daily precipitation",
+                  "Distance from garbage bin",
+                  "Distance from ocean",
+                  "Distance from picnic area",
+                  "Time of day",
+                  "Distance from den",
+                  "Weekday",
+                  "Lockdown phase 3: Social\ngatherings limited",
+                  "Lockdown phase 2: Social\ngatherings prohibited",
+                  "Intercept")
+  
+  # Build tidy CI table and plot
+  p_conf_ints <- bind_rows(
+    as_tibble(confint(top_model_1)) %>%
+      cbind(Variable = Variables_model_1,
+            Coefficient = coefficients_1) %>%
+      pivot_longer(`2.5 %`:`97.5 %`,
+                   names_to = "Level",
+                   values_to = "CL") %>%
+      mutate(Model = "Model 1"),
+    as_tibble(confint(top_model_2)) %>%
+      cbind(Variable = Variables_model_2,
+            Coefficient = coefficients_2) %>%
+      pivot_longer(`2.5 %`:`97.5 %`,
+                   names_to = "Level",
+                   values_to = "CL") %>%
+      mutate(Model = "Model 2")
+  ) %>%
+    mutate(
+      Variable = factor(Variable, levels = var_levels),
+      y_base   = as.numeric(Variable),
+      y        = y_base + if_else(Model == "Model 1", -0.1, 0.1)
+    ) %>%
+    group_by(Model, Variable, y, y_base) %>%
+    summarise(
+      Lower = min(CL),
+      Upper = max(CL),
+      Coefficient = unique(Coefficient),
+      .groups = "drop"
+    ) %>%
+    ggplot(aes(y = y, col = Model)) +
+    geom_segment(aes(x = Lower, xend = Upper, yend = y),
+                 linewidth = 2) +
+    geom_point(aes(x = Coefficient),
+               size = 5, alpha = 0.5) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_hline(yintercept = c(6.5, 9.5)) +
+    geom_text(
+      data = tibble(
+        x = c(-7, -7, -7),
+        y = c(6.3, 9.3, 10.5),
+        label = c("Continuous variables",
+                  "Categorical variables",
+                  "Intercept")
+      ),
+      aes(x = x, y = y, label = label),
+      inherit.aes = FALSE,
+      size = 5,
+      hjust = 0
+    ) +
+    scale_y_continuous(
+      breaks = unique(as.numeric(factor(var_levels, levels = var_levels))),
+      labels = var_levels
+    ) +
+    scale_x_continuous(breaks = c(-6, -4, -2, 0, 2, 4, 6)) +
+    labs(x = "95% Confidence Intervals", y = "") +
+    theme_classic() +
+    theme(
+      legend.position = "right",
+      axis.text = element_text(size = 18),
+      axis.title = element_text(size = 18),
+      legend.text = element_text(size = 18),
+      legend.title = element_blank())
+  p_conf_ints
+  
+  #Save plot
+  ggsave(filename = "Plots/conf_ints.tiff", p_conf_ints, dpi = "retina")
 }
 
 ## Multi-plot for logistic regression variables
