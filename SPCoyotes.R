@@ -56,7 +56,11 @@ df_encounters <- df_encounters_full %>%
   #change reference category from weekday to weekend
   mutate(weekday = fct_relevel(weekday, "weekend")) %>%
   #remove all data points with NAs
-  na.omit()
+  na.omit() #%>%
+  #remove probable duplicate attacks with different coordinates
+  #filter(!encounter_ID %in% c(1760, 1761, 2255, 'COS5', 1673, 5839, 5840, 4917, 1693, 5061, 5841, 4981, 4979, 5830, 4987,
+  #                            4984, 5857, 5854, 5156, 5860, 5858, 5864, 1828, 2286, 5198, 5304, 5367, 6124, 5376, 2335,
+  #                            5510, 4588, 4733, 2244, 5058, 1762, 2256, 2249, 5063, 1758, 1818, 5261, 5262, 5292, 5293))
 
 ## Human activity data summarized by sample block
 df_human_activity_blocks <- read_csv("Data/human_activity_blocks.csv")
@@ -158,7 +162,7 @@ BIC(conflict_100m_model, conflict_150m_model, conflict_200m_model, conflict_250m
 ### Calculate correlation coefficients for model variables -----
 
 ## Compare all continuous variables
-cor(df_encounters[c(8, 12, 16, 20:29)], method = "pearson")
+cor(df_encounters[c(8, 12, 16, 20:29)], method = "spearman")
 
 ## Degrees of freedom for comparisons
 length(df_encounters$prop_open_100_scaled) - 2
