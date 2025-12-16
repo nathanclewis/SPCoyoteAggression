@@ -57,7 +57,7 @@ df_encounters <- df_encounters_full %>%
   mutate(weekday = fct_relevel(weekday, "weekend")) %>%
   #remove all data points with NAs
   na.omit() #%>%
-  #remove probable duplicate attacks with different coordinates
+  #remove spatiotemporally similar (possibly auto-correlated) events
   #filter(!encounter_ID %in% c(1760, 1761, 2255, 'COS5', 1673, 5839, 5840, 4917, 1693, 5061, 5841, 4981, 4979, 5830, 4987,
   #                            4984, 5857, 5854, 5156, 5860, 5858, 5864, 1828, 2286, 5198, 5304, 5367, 6124, 5376, 2335,
   #                            5510, 4588, 4733, 2244, 5058, 1762, 2256, 2249, 5063, 1758, 1818, 5261, 5262, 5292, 5293))
