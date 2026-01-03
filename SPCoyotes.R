@@ -43,7 +43,7 @@ df_encounters <- df_encounters_full %>%
                 prop_open_100_scaled, prop_open_150_scaled, prop_open_200_scaled, prop_open_250_scaled,
                 prop_natural_cover_100_scaled, prop_natural_cover_150_scaled, prop_natural_cover_200_scaled, prop_natural_cover_250_scaled,
                 prop_developed_100_scaled, prop_developed_150_scaled, prop_developed_200_scaled, prop_developed_250_scaled,
-                garbage_scaled, picnic_scaled, distance2water_scaled, distance2ocean_scaled, d2den_scaled,
+                garbage_scaled, picnic_scaled, distance2water_scaled, distance2ocean_scaled, d2den_scaled, d2den,
                 precip_scaled, avg_temp_scaled, min_temp_scaled, max_temp_scaled, time_cos_scaled, lon, lat) %>%
   #remove any reports from outside study timeline
   filter(!is.na(Lockdown_Phase)) %>%
