@@ -1025,7 +1025,7 @@ p_adj <- p.adjust(p_vals, method = "BH");p_adj
   p_conf_ints
   
   #Save plot
-  ggsave(filename = "Plots/conf_ints.tiff", p_conf_ints, dpi = "retina")
+  #ggsave(filename = "Plots/conf_ints.tiff", p_conf_ints, dpi = "retina")
 }
 
 ## Multi-plot for logistic regression variables
